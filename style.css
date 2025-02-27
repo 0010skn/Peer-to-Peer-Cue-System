@@ -1,0 +1,255 @@
+body {
+    font-family: 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
+    background-color: #121212;
+    color: #e0e0e0;
+    min-width: 450px;
+    margin: 0;
+    padding: 20px;
+    line-height: 1.6;
+}
+
+h1 {
+    font-size: 2em;
+    color: #BB86FC;
+    text-align: center;
+    margin-bottom: 30px;
+    text-shadow: 0 0 10px rgba(187, 134, 252, 0.3);
+}
+
+h2 {
+    text-align: center;
+    font-size: 3.5em;
+    margin: 10px 0;
+}
+
+td {
+    width: 50%;
+    padding: 10px;
+}
+
+input,
+button {
+    background-color: #1F1F1F;
+    border: 1px solid #333;
+    color: #e0e0e0;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+input {
+    width: calc(100% - 32px);
+}
+
+input:focus {
+    outline: none;
+    border-color: #BB86FC;
+    box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.2);
+}
+
+button {
+    background-color: #3700B3;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 500;
+    border: none;
+    min-height: 40px;
+}
+
+button:hover {
+    background-color: #6200EE;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+a,
+a:visited {
+    color: #03DAC6;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: #CF6679;
+    text-decoration: underline;
+}
+
+.display,
+.control {
+    width: 100%;
+    background-color: #1E1E1E;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+    margin-bottom: 30px;
+    border: 1px solid #333;
+}
+
+.control-button {
+    width: 100%;
+    min-height: 60px;
+    font-size: 1.2em;
+    margin: 5px 0;
+    border-radius: 6px;
+}
+
+#goButton {
+    background-color: #388E3C;
+}
+
+#goButton:hover {
+    background-color: #4CAF50;
+}
+
+#fadeButton {
+    background-color: #FBC02D;
+    color: #121212;
+}
+
+#fadeButton:hover {
+    background-color: #FFEB3B;
+}
+
+#offButton {
+    background-color: #616161;
+}
+
+#offButton:hover {
+    background-color: #9E9E9E;
+}
+
+#resetButton {
+    background-color: #D32F2F;
+}
+
+#resetButton:hover {
+    background-color: #F44336;
+}
+
+.display-box {
+    border-radius: 6px;
+    margin: 8px;
+    padding: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.title {
+    vertical-align: top;
+    font-weight: bold;
+    color: #BB86FC;
+    font-size: 1.2em;
+    padding: 15px 10px 5px;
+}
+
+.standby {
+    background-color: #D32F2F;
+    color: white;
+}
+
+.go {
+    background-color: #388E3C;
+    color: white;
+}
+
+.fade {
+    background-color: #FBC02D;
+    color: #121212;
+}
+
+.off {
+    background-color: #616161;
+    color: white;
+}
+
+.hidden {
+    visibility: hidden;
+}
+
+.no-display {
+    display: none;
+}
+
+.status {
+    height: 125px;
+    vertical-align: text-top;
+    font-weight: bold;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #333;
+    padding: 10px;
+    overflow: auto;
+}
+
+.message {
+    height: 125px;
+    max-height: 125px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #333;
+    overflow: auto;
+    padding: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: #333 #1F1F1F;
+}
+
+.message::-webkit-scrollbar {
+    width: 8px;
+}
+
+.message::-webkit-scrollbar-track {
+    background: #1F1F1F;
+}
+
+.message::-webkit-scrollbar-thumb {
+    background-color: #333;
+    border-radius: 4px;
+}
+
+.msg-time {
+    color: #BB86FC;
+    font-weight: 500;
+}
+
+.cueMsg {
+    color: #FFA726;
+    font-weight: bold;
+}
+
+.selfMsg {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.peerMsg {
+    color: #FF5252;
+    font-weight: bold;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .control,
+    .display {
+        margin-bottom: 20px;
+    }
+
+    h1 {
+        font-size: 1.5em;
+    }
+
+    h2 {
+        font-size: 2.5em;
+    }
+
+    input,
+    button {
+        padding: 8px 12px;
+    }
+}

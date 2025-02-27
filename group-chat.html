@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peer-to-Peer Cue System --- 群对话</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Peer-to-Peer 提示系统 --- 群对话</h1>
+
+        <div class="role-selection">
+            <h3>选择角色</h3>
+            <div class="role-buttons">
+                <button id="hostButton" class="role-button host-btn">创建群组</button>
+                <button id="participantButton" class="role-button participant-btn">加入群组</button>
+            </div>
+        </div>
+
+        <div id="hostPanel" class="panel hidden">
+            <div class="host-info">
+                <h3>群组信息</h3>
+                <div id="hostId" class="id-display">主持人ID: 等待连接...</div>
+                <div class="participant-list">
+                    <h4>参与者列表</h4>
+                    <ul id="participants" class="participant-ul"></ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="participantPanel" class="panel hidden">
+            <div class="join-form">
+                <h3>加入群组</h3>
+                <div class="input-group">
+                    <label for="hostIdInput">主持人ID:</label>
+                    <input type="text" id="hostIdInput" placeholder="输入主持人ID..." />
+                    <button id="joinButton" class="join-btn">加入</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="chatPanel" class="panel hidden">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <h3>群组消息</h3>
+                    <div id="connectionStatus" class="connection-status">未连接</div>
+                </div>
+                <div id="messageDisplay" class="message-display"></div>
+                <div class="input-group chat-input">
+                    <input type="text" id="messageInput" placeholder="输入消息..." />
+                    <button id="sendMessageButton" class="send-btn">发送</button>
+                    <button id="clearMessagesButton" class="clear-btn">清除</button>
+                </div>
+            </div>
+
+            <div class="cue-control" id="cueControl">
+                <h3>提示控制</h3>
+                <div class="cue-buttons">
+                    <button type="button" class="control-button" id="resetGroupButton">重置</button>
+                    <button type="button" class="control-button" id="goGroupButton">开始</button>
+                    <button type="button" class="control-button" id="fadeGroupButton">淡出</button>
+                    <button type="button" class="control-button" id="offGroupButton">关闭</button>
+                </div>
+            </div>
+
+            <div class="cue-display" id="cueDisplay">
+                <div class="cue-box standby" id="standbyGroup">
+                    <h2>待命</h2>
+                </div>
+                <div class="cue-box hidden" id="goGroup">
+                    <h2>开始</h2>
+                </div>
+                <div class="cue-box hidden" id="fadeGroup">
+                    <h2>淡出</h2>
+                </div>
+                <div class="cue-box hidden" id="offGroup">
+                    <h2>关闭</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script>
+    <script type="text/javascript">
+        (function () {
+            // 元素引用
+            const hostButton = document.getElementById('hostButton');
+            const participantButton = document.getElementById('participantButton');
+            const hostPanel = document.getElementById('hostPanel');
+            const participantPanel = document.getElementById('participantPanel');
+            const chatPanel = document.getElementById('chatPanel');
+            const hostId = document.getElementById('hostId');
+            const hostIdInput = document.getElementById('hostIdInput');
+            const joinButton = document.getElementById('joinButton');
+            const participantsList = document.getElementById('participants');
+            const messageDisplay = document.getElementById('messageDisplay');
+            const messageInput = document.getElementById('messageInput');
+            const sendMessageButton = document.getElementById('sendMessageButton');
+            const clearMessagesButton = document.getElementById('clearMessagesButton');
+            const connectionStatus = document.getElementById('connectionStatus');
+            const cueControl = document.getElementById('cueControl');
+            const cueDisplay = document.getElementById('cueDisplay');
+
+            // 提示元素
+            const resetGroupButton = document.getElementById('resetGroupButton');
+            const goGroupButton = document.getElementById('goGroupButton');
+            const fadeGroupButton = document.getElementById('fadeGroupButton');
+            const offGroupButton = document.getElementById('offGroupButton');
+            const standbyGroup = document.getElementById('standbyGroup');
+            const goGroup = document.getElementById('goGroup');
+            const fadeGroup = document.getElementById('fadeGroup');
+            const offGroup = document.getElementById('offGroup');
+
+            // PeerJS变量
+            let peer = null;
+            let lastPeerId = null;
+            let connections = {}; // 保存所有连接
+            let isHost = false; // 是否为主持人
+            let hostConnection = null; // 如果是参与者，保存与主持人的连接
+
+            // 初始化PeerJS
+            function initializePeer() {
+                peer = new Peer(null, {
+                    debug: 2
+                });
+
+                peer.on('open', function (id) {
+                    if (peer.id === null) {
+                        console.log('Received null id from peer open');
+                        peer.id = lastPeerId;
+                    } else {
+                        lastPeerId = peer.id;
+                    }
+
+                    console.log('My peer ID: ' + peer.id);
+                    if (isHost) {
+                        hostId.textContent = "主持人ID: " + peer.id;
+                        connectionStatus.textContent = "等待参与者加入...";
+                        connectionStatus.className = "connection-status waiting";
+                    }
+                });
+
+                peer.on('connection', function (conn) {
+                    if (isHost) {
+                        handleNewParticipant(conn);
+                    } else {
+                        // 如果不是主持人，拒绝连接
+                        conn.on('open', function () {
+                            conn.send("只有主持人可以接受连接");
+                            setTimeout(function () { conn.close(); }, 500);
+                        });
+                    }
+                });
+
+                peer.on('disconnected', function () {
+                    connectionStatus.textContent = "连接丢失，正在尝试重连...";
+                    connectionStatus.className = "connection-status disconnected";
+                    console.log('Connection lost. Attempting reconnect');
+
+                    peer.id = lastPeerId;
+                    peer._lastServerId = lastPeerId;
+                    peer.reconnect();
+                });
+
+                peer.on('close', function () {
+                    connectionStatus.textContent = "连接已断开，请刷新页面";
+                    connectionStatus.className = "connection-status error";
+                    console.log('Connection destroyed');
+                    connections = {};
+                    if (isHost) {
+                        participantsList.innerHTML = "";
+                    }
+                });
+
+                peer.on('error', function (err) {
+                    console.log(err);
+                    connectionStatus.textContent = "错误: " + err;
+                    connectionStatus.className = "connection-status error";
+                    alert('错误: ' + err);
+                });
+            }
+
+            // 处理新参与者连接（仅限主持人）
+            function handleNewParticipant(conn) {
+                // 保存连接
+                connections[conn.peer] = conn;
+
+                // 更新参与者列表
+                const listItem = document.createElement('li');
+                listItem.id = 'participant-' + conn.peer;
+                listItem.textContent = '参与者: ' + conn.peer;
+                participantsList.appendChild(listItem);
+
+                // 当连接开启时
+                conn.on('open', function () {
+                    // 通知所有现有参与者有新成员加入
+                    broadcastToAll({
+                        type: 'system',
+                        action: 'join',
+                        peerId: conn.peer,
+                        message: '新参与者加入: ' + conn.peer
+                    });
+
+                    // 添加系统消息
+                    addMessage({
+                        type: 'system',
+                        message: '参与者已加入: ' + conn.peer
+                    });
+                });
+
+                // 处理来自参与者的数据
+                conn.on('data', function (data) {
+                    console.log('Received data from participant:', data);
+
+                    // 如果是消息，广播给其他参与者（除了发送者自己）
+                    if (data.type === 'chat') {
+                        // 广播给其他参与者，不包括发送者
+                        for (let peerId in connections) {
+                            if (peerId !== conn.peer) { // 排除原始发送者
+                                const connection = connections[peerId];
+                                if (connection.open) {
+                                    connection.send(data);
+                                }
+                            }
+                        }
+                        // 显示在主持人的屏幕上
+                        addMessage(data);
+                    }
+                    // 如果是提示信号，转发给所有人（包括发送者，因为这是控制信号）
+                    else if (data.type === 'cue') {
+                        handleCueSignal(data.cue);
+                        broadcastToAll(data);
+                    }
+                });
+
+                // 处理连接关闭
+                conn.on('close', function () {
+                    // 移除参与者
+                    if (connections[conn.peer]) {
+                        delete connections[conn.peer];
+                        const listItem = document.getElementById('participant-' + conn.peer);
+                        if (listItem) {
+                            listItem.remove();
+                        }
+
+                        // 通知其他人该参与者已离开
+                        broadcastToAll({
+                            type: 'system',
+                            action: 'leave',
+                            peerId: conn.peer,
+                            message: '参与者已离开: ' + conn.peer
+                        });
+
+                        // 添加系统消息
+                        addMessage({
+                            type: 'system',
+                            message: '参与者已离开: ' + conn.peer
+                        });
+                    }
+                });
+            }
+
+            // 广播消息给所有参与者（仅限主持人）
+            function broadcastToAll(data) {
+                // 如果是聊天消息且有发送者ID，排除原始发送者
+                if (data.type === 'chat' && data.sender) {
+                    for (let peerId in connections) {
+                        // 不要向消息的原始发送者广播他自己的消息
+                        if (peerId !== data.sender) {
+                            const conn = connections[peerId];
+                            if (conn.open) {
+                                conn.send(data);
+                            }
+                        }
+                    }
+                } else {
+                    // 系统消息或提示信号发送给所有人
+                    for (let peerId in connections) {
+                        const conn = connections[peerId];
+                        if (conn.open) {
+                            conn.send(data);
+                        }
+                    }
+                }
+            }
+
+            // 参与者：连接到主持人
+            function connectToHost(hostPeerId) {
+                if (peer.disconnected) {
+                    peer.reconnect();
+                }
+
+                hostConnection = peer.connect(hostPeerId, {
+                    reliable: true
+                });
+
+                hostConnection.on('open', function () {
+                    connectionStatus.textContent = "已连接到主持人: " + hostPeerId;
+                    connectionStatus.className = "connection-status connected";
+                    participantPanel.classList.add('hidden');
+                    chatPanel.classList.remove('hidden');
+
+                    // 隐藏主持人才有的控制面板
+                    cueControl.classList.add('hidden');
+
+                    // 添加系统消息
+                    addMessage({
+                        type: 'system',
+                        message: '已连接到群组'
+                    });
+                });
+
+                hostConnection.on('data', function (data) {
+                    console.log('Received data from host:', data);
+
+                    // 只处理系统消息和不是自己发的聊天消息
+                    if ((data.type === 'chat' && data.sender !== peer.id) || data.type === 'system') {
+                        addMessage(data);
+                    }
+                    // 处理提示信号
+                    else if (data.type === 'cue') {
+                        handleCueSignal(data.cue);
+                    }
+                });
+
+                hostConnection.on('close', function () {
+                    connectionStatus.textContent = "与主持人的连接已断开";
+                    connectionStatus.className = "connection-status error";
+                    hostConnection = null;
+
+                    // 添加系统消息
+                    addMessage({
+                        type: 'system',
+                        message: '与主持人的连接已断开'
+                    });
+                });
+            }
+
+            // 发送消息
+            function sendMessage() {
+                const message = messageInput.value.trim();
+                if (!message) return;
+
+                const messageData = {
+                    type: 'chat',
+                    sender: peer.id,
+                    message: message,
+                    timestamp: Date.now()
+                };
+
+                if (isHost) {
+                    // 主持人：广播给所有参与者并显示自己的消息
+                    broadcastToAll(messageData);
+                    addMessage(messageData);
+                } else if (hostConnection && hostConnection.open) {
+                    // 参与者：发送给主持人
+                    hostConnection.send(messageData);
+                    // 在自己的屏幕上显示消息
+                    addMessage(messageData);
+                } else {
+                    alert('未连接到主持人，无法发送消息');
+                    return;
+                }
+
+                messageInput.value = '';
+            }
+
+            // 发送提示信号（仅限主持人）
+            function sendCueSignal(cue) {
+                if (!isHost) return;
+
+                const cueData = {
+                    type: 'cue',
+                    cue: cue,
+                    sender: peer.id,
+                    timestamp: Date.now()
+                };
+
+                // 主持人：处理自己的提示并广播
+                handleCueSignal(cue);
+                broadcastToAll(cueData);
+
+                // 添加系统消息
+                addMessage({
+                    type: 'system',
+                    message: '已发送提示: ' + cue
+                });
+            }
+
+            // 处理提示信号
+            function handleCueSignal(cue) {
+                // 重置所有提示框
+                standbyGroup.className = "cue-box hidden";
+                goGroup.className = "cue-box hidden";
+                fadeGroup.className = "cue-box hidden";
+                offGroup.className = "cue-box hidden";
+
+                // 激活对应的提示
+                switch (cue) {
+                    case 'Reset':
+                        standbyGroup.className = "cue-box standby";
+                        break;
+                    case 'Go':
+                        goGroup.className = "cue-box go";
+                        break;
+                    case 'Fade':
+                        fadeGroup.className = "cue-box fade";
+                        break;
+                    case 'Off':
+                        offGroup.className = "cue-box off";
+                        break;
+                }
+            }
+
+            // 添加消息到显示区域
+            function addMessage(data) {
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message-item';
+
+                const timeString = formatTimestamp(data.timestamp || Date.now());
+
+                // 根据消息类型设置样式
+                if (data.type === 'system') {
+                    messageElement.innerHTML = `
+                        <span class="msg-time">${timeString}</span>
+                        <span class="system-msg">${data.message}</span>
+                    `;
+                } else if (data.type === 'chat') {
+                    const isSelf = data.sender === peer.id;
+                    const senderClass = isSelf ? 'self-msg' : 'peer-msg';
+                    const senderPrefix = isSelf ? '我' : (isHost && data.sender ? '参与者: ' : '');
+
+                    messageElement.innerHTML = `
+                        <span class="msg-time">${timeString}</span>
+                        <span class="${senderClass}">${senderPrefix}${data.sender}</span>: ${data.message}
+                    `;
+                }
+
+                messageDisplay.appendChild(messageElement);
+                messageDisplay.scrollTop = messageDisplay.scrollHeight;
+            }
+
+            // 格式化时间戳
+            function formatTimestamp(timestamp) {
+                const date = new Date(timestamp);
+                let hours = date.getHours();
+                const minutes = addZero(date.getMinutes());
+                const seconds = addZero(date.getSeconds());
+
+                if (hours > 12) {
+                    hours -= 12;
+                } else if (hours === 0) {
+                    hours = 12;
+                }
+
+                return `${hours}:${minutes}:${seconds}`;
+            }
+
+            function addZero(num) {
+                return num < 10 ? '0' + num : num;
+            }
+
+            // 清除消息
+            function clearMessages() {
+                messageDisplay.innerHTML = '';
+                addMessage({
+                    type: 'system',
+                    message: '消息已清除'
+                });
+            }
+
+            // 角色选择：成为主持人
+            hostButton.addEventListener('click', function () {
+                isHost = true;
+                hostPanel.classList.remove('hidden');
+                participantPanel.classList.add('hidden');
+                chatPanel.classList.remove('hidden');
+                document.querySelector('.role-selection').classList.add('hidden');
+
+                // 初始化
+                initializePeer();
+            });
+
+            // 角色选择：成为参与者
+            participantButton.addEventListener('click', function () {
+                isHost = false;
+                hostPanel.classList.add('hidden');
+                participantPanel.classList.remove('hidden');
+                document.querySelector('.role-selection').classList.add('hidden');
+
+                // 初始化
+                initializePeer();
+            });
+
+            // 加入群组
+            joinButton.addEventListener('click', function () {
+                const hostPeerId = hostIdInput.value.trim();
+                if (!hostPeerId) {
+                    alert('请输入主持人ID');
+                    return;
+                }
+
+                connectToHost(hostPeerId);
+            });
+
+            // 发送消息按钮
+            sendMessageButton.addEventListener('click', sendMessage);
+
+            // 回车键发送消息
+            messageInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            // 清除消息按钮
+            clearMessagesButton.addEventListener('click', clearMessages);
+
+            // 提示按钮事件（仅限主持人）
+            resetGroupButton.addEventListener('click', function () {
+                sendCueSignal('Reset');
+            });
+
+            goGroupButton.addEventListener('click', function () {
+                sendCueSignal('Go');
+            });
+
+            fadeGroupButton.addEventListener('click', function () {
+                sendCueSignal('Fade');
+            });
+
+            offGroupButton.addEventListener('click', function () {
+                sendCueSignal('Off');
+            });
+        })();
+    </script>
+
+    <style>
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .role-selection {
+            background-color: #1E1E1E;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            border: 1px solid #333;
+            text-align: center;
+        }
+
+        .role-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .role-button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            min-width: 200px;
+        }
+
+        .host-btn {
+            background-color: #3700B3;
+        }
+
+        .host-btn:hover {
+            background-color: #6200EE;
+        }
+
+        .participant-btn {
+            background-color: #006064;
+        }
+
+        .participant-btn:hover {
+            background-color: #00BCD4;
+        }
+
+        .panel {
+            margin-bottom: 30px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .host-info,
+        .join-form,
+        .chat-container {
+            background-color: #1E1E1E;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            border: 1px solid #333;
+        }
+
+        .id-display {
+            font-weight: bold;
+            background-color: rgba(187, 134, 252, 0.1);
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            color: #BB86FC;
+            border: 1px solid rgba(187, 134, 252, 0.3);
+        }
+
+        .participant-list {
+            margin-top: 20px;
+        }
+
+        .participant-list h4 {
+            color: #03DAC6;
+            margin-bottom: 10px;
+        }
+
+        .participant-ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .participant-ul li {
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .join-btn {
+            background-color: #006064;
+        }
+
+        .join-btn:hover {
+            background-color: #00BCD4;
+        }
+
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .connection-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .connection-status.waiting {
+            background-color: #FFA000;
+            color: #121212;
+        }
+
+        .connection-status.connected {
+            background-color: #388E3C;
+            color: white;
+        }
+
+        .connection-status.disconnected {
+            background-color: #FFA000;
+            color: #121212;
+        }
+
+        .connection-status.error {
+            background-color: #D32F2F;
+            color: white;
+        }
+
+        .message-display {
+            height: 300px;
+            overflow-y: auto;
+            padding: 15px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            margin-bottom: 15px;
+            scrollbar-width: thin;
+            scrollbar-color: #333 #1F1F1F;
+        }
+
+        .message-display::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .message-display::-webkit-scrollbar-track {
+            background: #1F1F1F;
+        }
+
+        .message-display::-webkit-scrollbar-thumb {
+            background-color: #333;
+            border-radius: 4px;
+        }
+
+        .message-item {
+            margin-bottom: 10px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .system-msg {
+            color: #FFAB40;
+            font-style: italic;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+        }
+
+        .send-btn {
+            background-color: #388E3C;
+        }
+
+        .send-btn:hover {
+            background-color: #4CAF50;
+        }
+
+        .cue-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .cue-box {
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 120px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .cue-box h2 {
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .role-buttons {
+                flex-direction: column;
+            }
+
+            .cue-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+
+</html>

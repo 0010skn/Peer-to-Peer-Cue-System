@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peer-to-Peer - 使用说明</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #BB86FC;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            color: #03DAC6;
+            margin-top: 30px;
+        }
+
+        a {
+            color: #03DAC6;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: #CF6679;
+            text-decoration: underline;
+        }
+
+        ul,
+        ol {
+            margin-left: 20px;
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        .highlight {
+            background-color: rgba(187, 134, 252, 0.1);
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #BB86FC;
+            margin: 20px 0;
+        }
+
+        .new-feature {
+            background-color: rgba(3, 218, 198, 0.1);
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #03DAC6;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .new-feature::after {
+            content: "新功能";
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background-color: #03DAC6;
+            color: #121212;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .feature-card {
+            background-color: #1E1E1E;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border: 1px solid #333;
+        }
+
+        .feature-card h3 {
+            color: #BB86FC;
+            margin-top: 0;
+        }
+
+        code {
+            background-color: #1E1E1E;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
+            color: #BB86FC;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #333;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-right: 10px;
+        }
+
+        .tab.active {
+            border-bottom: 2px solid #BB86FC;
+            color: #BB86FC;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Peer-to-Peer 提示系统</h1>
+
+        <p>这是一个使用WebRTC点对点连接的简单双向通信和视觉信号系统。该系统最初是为剧院表演中的舞台演员信号设计的。</p>
+
+        <div class="highlight">
+            <p>演示: <a href="https://0010skn.github.io/Peer-to-Peer-Cue-System"
+                    target="_blank">https://0010skn.github.io/Peer-to-Peer-Cue-System</a></p>
+            <p><a href="https://peerjs.com/examples.html" target="_blank">PeerJS 示例</a></p>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" data-target="one-to-one">一对一通信</div>
+            <div class="tab" data-target="group-chat">群组对话</div>
+        </div>
+
+        <div id="one-to-one-content">
+            <h2>一对一通信设置步骤</h2>
+
+            <ol>
+                <li>在接收设备上打开 <code>receive.html</code>。</li>
+                <li>在发送设备上打开 <code>send.html</code>。</li>
+                <li>将接收设备上显示的ID复制到发送设备的ID输入框中。</li>
+                <li>点击 <code>连接</code> 按钮。</li>
+                <li>两个设备都应该在<code>连接状态</code>区域显示连接成功。</li>
+            </ol>
+
+            <h2>功能特点</h2>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>接收端功能</h3>
+                    <p>接收端拥有大型指示器，可以显示待命、开始、淡出和停止信号。</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>发送端功能</h3>
+                    <p>发送端拥有按钮，可以发送待命、开始、淡出和停止信号，触发接收端的指示器。</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>双向通信</h3>
+                    <p>双方都可以使用文本消息系统进行额外的通信。</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>实时响应</h3>
+                    <p>通过WebRTC技术，系统能够实现低延迟的实时信号传输。</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="group-chat-content" style="display: none;">
+            <div class="new-feature">
+                <h2>群组对话功能</h2>
+                <p>群组对话功能支持一个主持人与多个参与者之间的实时通信和提示控制。主持人可以向所有参与者广播消息和提示信号，参与者之间也可以通过主持人进行通信。</p>
+            </div>
+
+            <h2>群组对话设置步骤</h2>
+
+            <ol>
+                <li>打开 <code>group-chat.html</code> 页面。</li>
+                <li>选择角色:
+                    <ul>
+                        <li><strong>创建群组</strong>: 成为主持人，负责控制提示和管理连接</li>
+                        <li><strong>加入群组</strong>: 成为参与者，可以接收提示信号并参与群聊</li>
+                    </ul>
+                </li>
+                <li>主持人会获得一个唯一ID，参与者需要输入这个ID来加入群组。</li>
+                <li>主持人可以在参与者列表中看到已连接的参与者。</li>
+                <li>所有成员都能看到群组消息，并接收提示信号。</li>
+            </ol>
+
+            <h2>角色与功能</h2>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>主持人角色</h3>
+                    <p>可以发送提示信号、查看所有参与者、管理群组通信。主持人是群组的核心，所有通信都通过主持人中转。</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>参与者角色</h3>
+                    <p>可以接收提示信号、发送和接收消息。参与者无法直接控制提示，但可以通过文字与主持人和其他参与者交流。</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>群组聊天</h3>
+                    <p>所有成员可以在共享的聊天区域发送和接收消息，支持实时通信和状态更新。</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>同步提示</h3>
+                    <p>主持人发送的提示信号会同步显示在所有参与者的屏幕上，确保团队协作的一致性。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabs = document.querySelectorAll('.tab');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function () {
+                    // 移除所有活动状态
+                    tabs.forEach(t => t.classList.remove('active'));
+
+                    // 设置当前标签为活动状态
+                    this.classList.add('active');
+
+                    // 隐藏所有内容
+                    document.getElementById('one-to-one-content').style.display = 'none';
+                    document.getElementById('group-chat-content').style.display = 'none';
+
+                    // 显示相应内容
+                    const target = this.getAttribute('data-target');
+                    document.getElementById(target + '-content').style.display = 'block';
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

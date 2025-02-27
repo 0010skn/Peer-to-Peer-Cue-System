@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peer-to-Peer Cue System --- 接收端</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Peer-to-Peer 提示系统 --- 接收端</h1>
+
+        <div class="control-panel">
+            <div class="status-section">
+                <h3>连接状态</h3>
+                <div id="receiver-id" class="id-display">ID: 等待连接...</div>
+                <div id="status" class="status"></div>
+                <div id="connections-count" class="connections-count">已连接发送端: 0</div>
+            </div>
+
+            <div class="messaging-section">
+                <h3>消息</h3>
+                <div class="input-group">
+                    <input type="text" id="sendMessageBox" placeholder="输入消息..." autofocus="true" />
+                    <button type="button" id="sendButton">发送</button>
+                    <button type="button" id="clearMsgsButton" class="clear-btn">清除消息</button>
+                </div>
+                <div class="message" id="message"></div>
+            </div>
+        </div>
+
+        <div class="cue-display">
+            <div class="cue-box standby" id="standby">
+                <h2>待命</h2>
+            </div>
+            <div class="cue-box hidden" id="go">
+                <h2>开始</h2>
+            </div>
+            <div class="cue-box hidden" id="fade">
+                <h2>淡出</h2>
+            </div>
+            <div class="cue-box hidden" id="off">
+                <h2>关闭</h2>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script>
+    <script type="text/javascript">
+        (function () {
+
+            var lastPeerId = null;
+            var peer = null; // Own peer object
+            var peerId = null;
+            var connections = {}; // 存储多个连接
+            var recvId = document.getElementById("receiver-id");
+            var status = document.getElementById("status");
+            var connectionsCount = document.getElementById("connections-count");
+            var message = document.getElementById("message");
+            var standbyBox = document.getElementById("standby");
+            var goBox = document.getElementById("go");
+            var fadeBox = document.getElementById("fade");
+            var offBox = document.getElementById("off");
+            var sendMessageBox = document.getElementById("sendMessageBox");
+            var sendButton = document.getElementById("sendButton");
+            var clearMsgsButton = document.getElementById("clearMsgsButton");
+
+            /**
+             * Create the Peer object for our end of the connection.
+             *
+             * Sets up callbacks that handle any events related to our
+             * peer object.
+             */
+            function initialize() {
+                // Create own peer object with connection to shared PeerJS server
+                peer = new Peer(null, {
+                    debug: 2
+                });
+
+                peer.on('open', function (id) {
+                    // Workaround for peer.reconnect deleting previous id
+                    if (peer.id === null) {
+                        console.log('Received null id from peer open');
+                        peer.id = lastPeerId;
+                    } else {
+                        lastPeerId = peer.id;
+                    }
+
+                    console.log('ID: ' + peer.id);
+                    recvId.innerHTML = "ID: " + peer.id;
+                    status.innerHTML = "等待连接...";
+                });
+                peer.on('connection', function (c) {
+                    // 允许多个连接 - 已移除单一连接限制
+                    console.log("收到来自 " + c.peer + " 的连接请求");
+
+                    // 将新连接添加到连接列表
+                    connections[c.peer] = c;
+                    updateConnectionsCount();
+
+                    // 更新状态消息
+                    status.innerHTML = "新发送端已连接: " + c.peer;
+
+                    // 为新连接设置回调
+                    setupConnection(c);
+                });
+                peer.on('disconnected', function () {
+                    status.innerHTML = "连接丢失。请重新连接";
+                    console.log('Connection lost. Please reconnect');
+
+                    // Workaround for peer.reconnect deleting previous id
+                    peer.id = lastPeerId;
+                    peer._lastServerId = lastPeerId;
+                    peer.reconnect();
+                });
+                peer.on('close', function () {
+                    connections = {};
+                    updateConnectionsCount();
+                    status.innerHTML = "连接已断开。请刷新页面";
+                    console.log('Connection destroyed');
+                });
+                peer.on('error', function (err) {
+                    console.log(err);
+                    alert('' + err);
+                });
+            };
+
+            /**
+             * 为连接设置回调
+             */
+            function setupConnection(conn) {
+                conn.on('open', function () {
+                    console.log("与 " + conn.peer + " 的连接已打开");
+                    conn.send("成功连接到接收端");
+                });
+
+                conn.on('data', function (data) {
+                    console.log("收到数据，来自: " + conn.peer);
+                    var cueString = "<span class=\"cueMsg\">Cue: </span>";
+                    switch (data) {
+                        case 'Go':
+                            go();
+                            addMessage(cueString + data + " (来自: " + conn.peer + ")");
+                            break;
+                        case 'Fade':
+                            fade();
+                            addMessage(cueString + data + " (来自: " + conn.peer + ")");
+                            break;
+                        case 'Off':
+                            off();
+                            addMessage(cueString + data + " (来自: " + conn.peer + ")");
+                            break;
+                        case 'Reset':
+                            reset();
+                            addMessage(cueString + data + " (来自: " + conn.peer + ")");
+                            break;
+                        default:
+                            addMessage("<span class=\"peerMsg\">发送端 (" + conn.peer + "): </span>" + data);
+                            break;
+                    };
+                });
+
+                conn.on('close', function () {
+                    // 移除关闭的连接
+                    if (connections[conn.peer]) {
+                        delete connections[conn.peer];
+                        updateConnectionsCount();
+                        addMessage("<span class=\"system\">发送端断开连接: " + conn.peer + "</span>");
+                    }
+
+                    // 更新状态
+                    status.innerHTML = getConnectionsStatusText();
+                });
+
+                conn.on('error', function (err) {
+                    console.log("连接错误: " + err);
+                    // 移除错误的连接
+                    if (connections[conn.peer]) {
+                        delete connections[conn.peer];
+                        updateConnectionsCount();
+                    }
+                });
+            }
+
+            /**
+             * 获取当前连接状态文本
+             */
+            function getConnectionsStatusText() {
+                var count = Object.keys(connections).length;
+                if (count === 0) {
+                    return "等待连接...";
+                } else {
+                    return "已连接 " + count + " 个发送端";
+                }
+            }
+
+            /**
+             * 更新连接计数显示
+             */
+            function updateConnectionsCount() {
+                var count = Object.keys(connections).length;
+                connectionsCount.textContent = "已连接发送端: " + count;
+
+                // 更新状态文本
+                status.innerHTML = getConnectionsStatusText();
+            }
+
+            /**
+             * 向所有连接的发送端发送消息
+             */
+            function sendToAll(msg) {
+                for (var peerId in connections) {
+                    var conn = connections[peerId];
+                    if (conn.open) {
+                        conn.send(msg);
+                    }
+                }
+            }
+
+            function go() {
+                standbyBox.className = "display-box hidden";
+                goBox.className = "display-box go";
+                fadeBox.className = "display-box hidden";
+                offBox.className = "display-box hidden";
+                return;
+            };
+
+            function fade() {
+                standbyBox.className = "display-box hidden";
+                goBox.className = "display-box hidden";
+                fadeBox.className = "display-box fade";
+                offBox.className = "display-box hidden";
+                return;
+            };
+
+            function off() {
+                standbyBox.className = "display-box hidden";
+                goBox.className = "display-box hidden";
+                fadeBox.className = "display-box hidden";
+                offBox.className = "display-box off";
+                return;
+            }
+
+            function reset() {
+                standbyBox.className = "display-box standby";
+                goBox.className = "display-box hidden";
+                fadeBox.className = "display-box hidden";
+                offBox.className = "display-box hidden";
+                return;
+            };
+
+            function addMessage(msg) {
+                var now = new Date();
+                var h = now.getHours();
+                var m = addZero(now.getMinutes());
+                var s = addZero(now.getSeconds());
+
+                if (h > 12)
+                    h -= 12;
+                else if (h === 0)
+                    h = 12;
+
+                function addZero(t) {
+                    if (t < 10)
+                        t = "0" + t;
+                    return t;
+                };
+
+                message.innerHTML = "<br><span class=\"msg-time\">" + h + ":" + m + ":" + s + "</span>  -  " + msg + message.innerHTML;
+            }
+
+            function clearMessages() {
+                message.innerHTML = "";
+                addMessage("消息已清除");
+            }
+
+            // Listen for enter in message box
+            sendMessageBox.addEventListener('keypress', function (e) {
+                var event = e || window.event;
+                var char = event.which || event.keyCode;
+                if (char == '13')
+                    sendButton.click();
+            });
+            // Send message
+            sendButton.addEventListener('click', function () {
+                if (Object.keys(connections).length > 0) {
+                    var msg = sendMessageBox.value;
+                    sendMessageBox.value = "";
+                    sendToAll(msg);
+                    console.log("发送给所有发送端: " + msg)
+                    addMessage("<span class=\"selfMsg\">接收端: </span>" + msg);
+                } else {
+                    console.log('没有活动的连接');
+                    addMessage("<span class=\"system\">错误: 没有活动的连接</span>");
+                }
+            });
+
+            // Clear messages box
+            clearMsgsButton.addEventListener('click', clearMessages);
+
+            initialize();
+        })();
+    </script>
+
+    <style>
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .status-section,
+        .messaging-section {
+            background-color: #1E1E1E;
+            border-radius: 8px;
+            padding: 20px;
+            flex: 1;
+            min-width: 300px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            border: 1px solid #333;
+        }
+
+        h3 {
+            color: #BB86FC;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .id-display {
+            font-weight: bold;
+            background-color: rgba(187, 134, 252, 0.1);
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            color: #BB86FC;
+            border: 1px solid rgba(187, 134, 252, 0.3);
+        }
+
+        .connections-count {
+            font-weight: bold;
+            background-color: rgba(3, 218, 198, 0.1);
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 15px;
+            color: #03DAC6;
+            border: 1px solid rgba(3, 218, 198, 0.3);
+        }
+
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .clear-btn {
+            background-color: #616161;
+        }
+
+        .clear-btn:hover {
+            background-color: #9E9E9E;
+        }
+
+        .cue-display {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .cue-box {
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 150px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .cue-box.standby {
+            grid-column: 1 / -1;
+            animation: pulse 2s infinite;
+        }
+
+        .cue-box.go {
+            animation: appear 0.5s ease-in-out;
+        }
+
+        .cue-box.fade {
+            animation: appear 0.5s ease-in-out;
+        }
+
+        .cue-box.off {
+            animation: appear 0.5s ease-in-out;
+        }
+
+        .system {
+            color: #03DAC6;
+            font-style: italic;
+            font-weight: bold;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 20px rgba(211, 47, 47, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(211, 47, 47, 0);
+            }
+        }
+
+        @keyframes appear {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .control-panel {
+                flex-direction: column;
+            }
+
+            .cue-display {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+
+</html>

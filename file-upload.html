@@ -1,1048 +1,531 @@
 <!DOCTYPE html>
 <html>
-
-<head>
+  <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Peer-to-Peer 文件传输 - 上传文件</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-</head>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  </head>
 
-<body>
+  <body>
     <div class="container">
-        <h1>Peer-to-Peer 文件传输 - 上传文件</h1>
+      <h1>Peer-to-Peer 文件传输 - 上传文件</h1>
 
-        <div class="upload-section">
-            <h3>选择文件</h3>
-            <div class="user-info">
-                <span class="label">您的用户Key:</span>
-                <span id="userKey">等待连接...</span>
-                <div class="key-input-group" style="display: none;">
-                    <input type="text" id="customKeyInput" placeholder="输入您的Key...">
-                    <button id="setKeyButton" class="btn btn-small">使用此Key</button>
-                </div>
-                <div class="key-warning">
-                    <p class="warning-text">⚠️ 重要提示:</p>
-                    <ul>
-                        <li>您的Key是您的唯一身份标识,请务必妥善保管</li>
-                        <li>请勿将Key泄露或转交给他人使用</li>
-                        <li>建议将Key保存在安全的地方</li>
-                        <li>Key丢失将无法找回之前的上传记录</li>
-                    </ul>
-                </div>
-                <div class="user-actions">
-                    <button id="historyButton" class="btn btn-small">查看历史记录</button>
-                    <button id="unlockVIPButton" class="btn btn-small btn-premium" style="display: none;">
-                        <span class="premium-icon">⭐</span>
-                        解锁会员
-                    </button>
-                </div>
-            </div>
-            <input type="file" id="fileInput" />
-            <button id="uploadButton" class="btn">上传文件</button>
-        </div>
+      <div class="upload-section">
+        <h3>选择文件</h3>
+        <div class="user-info">
+          <span class="label">您的用户Key:</span>
+          <span id="userKey">等待连接...</span>
+          <div class="key-input-group" style="display: none">
+            <input
+              type="text"
+              id="customKeyInput"
+              placeholder="输入您的Key..."
+            />
+            <button id="setKeyButton" class="btn btn-small">使用此Key</button>
+          </div>
+          <div class="key-warning">
+            <p class="warning-text">⚠️ 重要提示:</p>
+            <ul>
+              <li>您的Key是您的唯一身份标识,请务必妥善保管</li>
+              <li>请勿将Key泄露或转交给他人使用</li>
+              <li>建议将Key保存在安全的地方</li>
+              <li>Key丢失将无法找回之前的上传记录</li>
+            </ul>
+          </div>
+          <div id="announcement" class="announcement">
+            <div class="markdown-content"></div>
+            <style>
+              .markdown-content h1 {
+                font-size: 2em;
+                margin: 0.67em 0;
+              }
 
-        <div class="result-section hidden">
-            <h3>上传结果</h3>
-            <div class="result-item">
-                <span class="label">文件名:</span>
-                <span id="fileName"></span>
-            </div>
-            <div class="result-item">
-                <span class="label">文件大小:</span>
-                <span id="fileSize"></span>
-            </div>
-            <div class="result-item">
-                <span class="label">取件码:</span>
-                <span id="pickupCode"></span>
-            </div>
-            <div class="result-item">
-                <span class="label">中转服务器:</span>
-                <span id="relayServer"></span>
-            </div>
-            <div class="result-item">
-                <span class="label">过期时间:</span>
-                <span id="expirationTime"></span>
-            </div>
-        </div>
+              .markdown-content h2 {
+                font-size: 1.5em;
+                margin: 0.83em 0;
+              }
 
-        <div class="download-section">
-            <h3>下载文件</h3>
-            <div class="input-group">
-                <label for="relayServerInput">中转服务器:</label>
-                <input type="text" id="relayServerInput" placeholder="输入中转服务器地址...">
-            </div>
-            <div class="input-group">
-                <label for="pickupCodeInput">取件码:</label>
-                <input type="text" id="pickupCodeInput" placeholder="输入取件码...">
-            </div>
-            <button id="downloadButton" class="btn">下载文件</button>
+              .markdown-content h3 {
+                font-size: 1.17em;
+                margin: 1em 0;
+              }
+
+              .markdown-content p {
+                margin: 1em 0;
+              }
+
+              .markdown-content ul {
+                padding-left: 2em;
+              }
+
+              .markdown-content ol {
+                padding-left: 2em;
+              }
+
+              .markdown-content code {
+                background: #f0f0f0;
+                padding: 0.2em 0.4em;
+                border-radius: 3px;
+              }
+
+              .markdown-content pre {
+                background: #f0f0f0;
+                padding: 1em;
+                overflow-x: auto;
+              }
+
+              .markdown-content blockquote {
+                border-left: 4px solid #ddd;
+                margin: 0;
+                padding-left: 1em;
+              }
+
+              .markdown-content img {
+                max-width: 100%;
+              }
+
+              .markdown-content a {
+                color: #0366d6;
+                text-decoration: none;
+              }
+
+              .markdown-content a:hover {
+                text-decoration: underline;
+              }
+            </style>
+          </div>
+          <div class="user-actions">
+            <button id="historyButton" class="btn btn-small">
+              查看历史记录
+            </button>
+            <button
+              id="unlockVIPButton"
+              class="btn btn-small btn-premium"
+              style="display: none"
+            >
+              <span class="premium-icon">⭐</span>
+              解锁会员
+            </button>
+          </div>
         </div>
+        <input type="file" id="fileInput" />
+        <button id="uploadButton" class="btn">上传文件</button>
+      </div>
+
+      <div class="result-section hidden">
+        <h3>上传结果</h3>
+        <div class="result-item">
+          <span class="label">文件名:</span>
+          <span id="fileName"></span>
+        </div>
+        <div class="result-item">
+          <span class="label">文件大小:</span>
+          <span id="fileSize"></span>
+        </div>
+        <div class="result-item">
+          <span class="label">取件码:</span>
+          <span id="pickupCode"></span>
+        </div>
+        <div class="result-item">
+          <span class="label">中转服务器:</span>
+          <span id="relayServer"></span>
+        </div>
+        <div class="result-item">
+          <span class="label">过期时间:</span>
+          <span id="expirationTime"></span>
+        </div>
+      </div>
+
+      <div class="download-section">
+        <h3>下载文件</h3>
+        <div class="input-group">
+          <label for="relayServerInput">中转服务器:</label>
+          <input
+            type="text"
+            id="relayServerInput"
+            placeholder="输入中转服务器地址..."
+          />
+        </div>
+        <div class="input-group">
+          <label for="pickupCodeInput">取件码:</label>
+          <input type="text" id="pickupCodeInput" placeholder="输入取件码..." />
+        </div>
+        <button id="downloadButton" class="btn">下载文件</button>
+      </div>
     </div>
 
     <!-- 历史记录弹窗 -->
     <div id="historyModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>历史连接记录</h2>
-                <span class="close">&times;</span>
-            </div>
-            <div class="modal-body">
-                <div class="history-list">
-                    <!-- 历史记录将在这里动态添加 -->
-                </div>
-            </div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>历史连接记录</h2>
+          <div class="header-actions">
+            <button id="refreshHistory" class="btn btn-small btn-refresh">
+              <span class="refresh-icon">🔄</span> 刷新
+            </button>
+            <span class="close">&times;</span>
+          </div>
         </div>
+        <div class="modal-body">
+          <div class="history-list">
+            <!-- 历史记录将在这里动态添加 -->
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 会员解锁弹窗 -->
     <div id="vipUnlockModal" class="modal">
-        <div class="modal-content premium-modal">
-            <div class="modal-header">
-                <h2>⭐ 解锁会员特权</h2>
-                <span class="close">&times;</span>
-            </div>
-            <div class="modal-body">
-                <div class="vip-benefits">
-                    <h3>会员特权</h3>
-                    <ul>
-                        <li>✨ 更大的文件上传限制</li>
-                        <li>✨ 更长的文件保存时间</li>
-                        <li>✨ 无限制的下载次数</li>
-                        <li>✨ 优先的传输速度</li>
-                    </ul>
-                </div>
-                <div class="card-input">
-                    <label for="cardInput">输入卡密:</label>
-                    <input type="text" id="cardInput" placeholder="请输入卡密" maxlength="19">
-                    <p class="card-hint">卡密格式：XXXX-XXXX-XXXX-XXXX</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="validateCard" class="btn btn-premium">验证卡密</button>
-            </div>
+      <div class="modal-content premium-modal">
+        <div class="modal-header">
+          <h2>⭐ 解锁会员特权</h2>
+          <span class="close">&times;</span>
         </div>
+        <div class="modal-body">
+          <div class="vip-benefits">
+            <h3>会员特权</h3>
+            <ul>
+              <li>✨ 更大的文件上传限制</li>
+              <li>✨ 更长的文件保存时间</li>
+              <li>✨ 无限制的下载次数</li>
+              <li>✨ 优先的传输速度</li>
+            </ul>
+          </div>
+          <div class="card-input">
+            <label for="cardInput">输入卡密:</label>
+            <input
+              type="text"
+              id="cardInput"
+              placeholder="请输入卡密"
+              maxlength="19"
+            />
+            <p class="card-hint">卡密格式：XXXX-XXXX-XXXX-XXXX</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="validateCard" class="btn btn-premium">验证卡密</button>
+        </div>
+      </div>
     </div>
 
     <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script>
-    <script>
-        (function () {
-            const fileInput = document.getElementById('fileInput');
-            const uploadButton = document.getElementById('uploadButton');
-            const resultSection = document.querySelector('.result-section');
-            const fileName = document.getElementById('fileName');
-            const fileSize = document.getElementById('fileSize');
-            const pickupCode = document.getElementById('pickupCode');
-            const relayServer = document.getElementById('relayServer');
-            const relayServerInput = document.getElementById('relayServerInput');
-            const pickupCodeInput = document.getElementById('pickupCodeInput');
-            const downloadButton = document.getElementById('downloadButton');
-            const expirationTime = document.getElementById('expirationTime');
-            const userKeyDisplay = document.getElementById('userKey');
-            const customKeyInput = document.getElementById('customKeyInput');
-            const setKeyButton = document.getElementById('setKeyButton');
-            const historyButton = document.getElementById('historyButton');
-            const unlockVIPButton = document.getElementById('unlockVIPButton');
-
-            let peer;
-            let conn;
-            let currentUserKey = '';
-            let connectionHistory = [];
-
-            function initialize() {
-                // 初始化数据库
-                initializeDB();
-                // 加载历史记录
-                loadConnectionHistory();
-                // 从IndexedDB加载用户key
-                loadUserKey();
-                // 立即显示历史记录按钮
-                historyButton.style.display = 'inline-block';
-                // 初始化历史记录弹窗
-                initializeHistoryModal();
-
-                peer = new Peer(null, {
-                    debug: 2
-                });
-
-                peer.on('open', function (id) {
-                    console.log('Connected with ID:', id);
-                    document.querySelector('.key-input-group').style.display = 'block';
-                });
-
-                // 初始化VIP解锁功能
-                initializeVIPUnlock();
-            }
-
-            function initializeHistoryModal() {
-                const historyModal = document.getElementById('historyModal');
-                const historyCloseBtn = historyModal.querySelector('.close');
-
-                // 更新历史记录显示
-                updateHistoryDisplay();
-
-                historyCloseBtn.addEventListener('click', function () {
-                    historyModal.style.display = 'none';
-                });
-
-                window.addEventListener('click', function (event) {
-                    if (event.target == historyModal) {
-                        historyModal.style.display = 'none';
-                    }
-                });
-
-                // 修改历史记录按钮点击事件
-                historyButton.addEventListener('click', function () {
-                    updateHistoryDisplay(); // 确保显示最新的历史记录
-                    historyModal.style.display = 'block';
-                });
-            }
-
-            function loadConnectionHistory() {
-                const history = localStorage.getItem('connectionHistory');
-                if (history) {
-                    connectionHistory = JSON.parse(history);
-                }
-            }
-
-            function saveConnectionHistory() {
-                localStorage.setItem('connectionHistory', JSON.stringify(connectionHistory));
-            }
-
-            function addToHistory(serverId, userKey) {
-                const now = new Date().toISOString();
-                // 检查是否已存在相同的记录
-                const existingIndex = connectionHistory.findIndex(
-                    item => item.serverId === serverId && item.userKey === userKey
-                );
-
-                if (existingIndex !== -1) {
-                    // 更新已存在的记录
-                    connectionHistory[existingIndex].lastUsed = now;
-                } else {
-                    // 添加新记录
-                    connectionHistory.push({
-                        serverId,
-                        userKey,
-                        firstUsed: now,
-                        lastUsed: now
-                    });
-                }
-
-                saveConnectionHistory();
-                updateHistoryDisplay();
-            }
-
-            function updateHistoryDisplay() {
-                const historyList = document.querySelector('.history-list');
-                historyList.innerHTML = '';
-
-                // 按最后使用时间排序
-                connectionHistory.sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed));
-
-                connectionHistory.forEach(item => {
-                    const historyItem = document.createElement('div');
-                    historyItem.className = 'history-item';
-                    historyItem.innerHTML = `
-                        <div class="history-info">
-                            <div class="server-info">
-                                <span class="label">服务器ID:</span>
-                                <span class="value">${item.serverId}</span>
-                            </div>
-                            <div class="key-info">
-                                <span class="label">用户Key:</span>
-                                <span class="value">${item.userKey || '未设置'}</span>
-                            </div>
-                            <div class="time-info">
-                                <div>首次使用: ${formatDate(item.firstUsed)}</div>
-                                <div>最后使用: ${formatDate(item.lastUsed)}</div>
-                            </div>
-                        </div>
-                        <div class="history-actions">
-                            <button class="btn btn-small use-key" data-server="${item.serverId}" data-key="${item.userKey}">使用此配置</button>
-                            <button class="btn btn-small btn-delete" data-server="${item.serverId}" data-key="${item.userKey}">删除</button>
-                        </div>
-                    `;
-                    historyList.appendChild(historyItem);
-                });
-
-                // 添加事件监听
-                document.querySelectorAll('.use-key').forEach(button => {
-                    button.addEventListener('click', function () {
-                        const serverId = this.dataset.server;
-                        const userKey = this.dataset.key;
-                        document.getElementById('historyModal').style.display = 'none';
-                        if (userKey) {
-                            customKeyInput.value = userKey;
-                            currentUserKey = userKey;
-                            userKeyDisplay.textContent = userKey;
-                        }
-                        connectToRelayServer(serverId, userKey);
-                    });
-                });
-
-                document.querySelectorAll('.btn-delete').forEach(button => {
-                    button.addEventListener('click', function () {
-                        const serverId = this.dataset.server;
-                        const userKey = this.dataset.key;
-                        if (confirm('确定要删除这条历史记录吗？')) {
-                            deleteHistoryItem(serverId, userKey);
-                        }
-                    });
-                });
-            }
-
-            function deleteHistoryItem(serverId, userKey) {
-                connectionHistory = connectionHistory.filter(
-                    item => !(item.serverId === serverId && item.userKey === userKey)
-                );
-                saveConnectionHistory();
-                updateHistoryDisplay();
-            }
-
-            function connectToRelayServer(serverId, userKey = '') {
-                if (userKey) {
-                    currentUserKey = userKey;
-                    userKeyDisplay.textContent = currentUserKey;
-                    saveUserKey(userKey);
-                }
-
-                // 如果已有连接，先关闭
-                if (conn) {
-                    conn.close();
-                }
-
-                conn = peer.connect(serverId);
-
-                conn.on('open', function () {
-                    console.log('Connected to relay server');
-                    // 发送用户key到服务器进行验证
-                    conn.send({
-                        type: 'setKey',
-                        key: currentUserKey
-                    });
-                });
-
-                conn.on('data', function (data) {
-                    if (data.type === 'keyStatus') {
-                        currentUserKey = data.key;
-                        userKeyDisplay.textContent = currentUserKey;
-                        saveUserKey(currentUserKey);
-                        addToHistory(conn.peer, currentUserKey);
-
-                        if (data.isExisting) {
-                            showMessage('使用已存在的Key登录成功', 'success');
-                        } else {
-                            showMessage('已为您生成新的Key,请妥善保管', 'warning');
-                        }
-                    } else if (data.type === 'membershipStatus') {
-                        const unlockButton = document.getElementById('unlockVIPButton');
-                        if (data.enabled) {
-                            unlockButton.style.display = 'inline-block';
-                            if (data.isMember) {
-                                unlockButton.textContent = '✨ 已解锁会员';
-                                unlockButton.disabled = true;
-                            } else {
-                                unlockButton.textContent = '⭐ 解锁会员';
-                                unlockButton.disabled = false;
-                            }
-                        } else {
-                            unlockButton.style.display = 'none';
-                        }
-                    } else if (data.type === 'cardValidation') {
-                        if (data.success) {
-                            alert(data.message);
-                            const unlockButton = document.getElementById('unlockVIPButton');
-                            unlockButton.textContent = '✨ 已解锁会员';
-                            unlockButton.disabled = true;
-                            document.getElementById('vipUnlockModal').style.display = 'none';
-                        } else {
-                            alert(data.error);
-                        }
-                    }
-                });
-
-                conn.on('close', function () {
-                    console.log('Connection closed');
-                    const unlockButton = document.getElementById('unlockVIPButton');
-                    unlockButton.style.display = 'none';
-                });
-
-                conn.on('error', function (err) {
-                    console.error('Connection error:', err);
-                });
-            }
-
-            // 从IndexedDB加载用户key
-            function loadUserKey() {
-                const request = indexedDB.open('fileRelayDB', 1);
-
-                request.onsuccess = function (event) {
-                    const db = event.target.result;
-                    const transaction = db.transaction(['users'], 'readonly');
-                    const store = transaction.objectStore('users');
-                    const getRequest = store.get('currentUser');
-
-                    getRequest.onsuccess = function () {
-                        if (getRequest.result) {
-                            currentUserKey = getRequest.result.key;
-                            userKeyDisplay.textContent = currentUserKey;
-                        }
-                    };
-                };
-            }
-
-            // 保存用户key到IndexedDB
-            function saveUserKey(userKey) {
-                const request = indexedDB.open('fileRelayDB', 1);
-
-                request.onsuccess = function (event) {
-                    const db = event.target.result;
-                    const transaction = db.transaction(['users'], 'readwrite');
-                    const store = transaction.objectStore('users');
-
-                    // 使用正确的键路径格式
-                    const userData = {
-                        id: 'currentUser',
-                        key: userKey,
-                        lastUsed: new Date()
-                    };
-
-                    // 使用put而不是add，这样如果记录已存在会更新它
-                    const putRequest = store.put(userData);
-
-                    putRequest.onerror = function (event) {
-                        console.error('保存用户Key失败:', event.target.error);
-                    };
-
-                    putRequest.onsuccess = function (event) {
-                        console.log('用户Key保存成功');
-                    };
-                };
-
-                request.onerror = function (event) {
-                    console.error('打开数据库失败:', event.target.error);
-                };
-            }
-
-            function generatePickupCode() {
-                const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-                const length = 8;
-                let code = '';
-
-                for (let i = 0; i < length; i++) {
-                    code += characters.charAt(Math.floor(Math.random() * characters.length));
-                }
-
-                return code;
-            }
-
-            function uploadFile() {
-                const file = fileInput.files[0];
-                if (!file) {
-                    alert('请选择要上传的文件');
-                    return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    const fileData = e.target.result;
-                    const code = generatePickupCode();
-
-                    const data = {
-                        type: 'upload',
-                        fileName: file.name,
-                        fileSize: file.size,
-                        fileData: fileData,
-                        pickupCode: code,
-                        userKey: currentUserKey
-                    };
-
-                    // 将文件保存到本地IndexedDB
-                    saveFileToLocalDB(data);
-
-                    conn.send(data);
-                };
-                reader.readAsDataURL(file);
-            }
-
-            function downloadFile() {
-                const relayServerId = relayServerInput.value.trim();
-                const code = pickupCodeInput.value.trim();
-
-                if (!relayServerId || !code) {
-                    alert('请输入中转服务器地址和取件码');
-                    return;
-                }
-
-                connectToRelayServer(relayServerId);
-                if (conn) {
-                    conn.on('open', function () {
-                        // 发送下载请求而不是上传文件
-                        conn.send({
-                            type: 'download',
-                            pickupCode: code,
-                            userKey: currentUserKey
-                        });
-                    });
-                }
-            }
-
-            // 将文件保存到本地IndexedDB
-            function saveFileToLocalDB(fileData) {
-                const request = indexedDB.open('fileRelayDB', 1);
-
-                request.onsuccess = function (event) {
-                    const db = event.target.result;
-                    const transaction = db.transaction(['files'], 'readwrite');
-                    const store = transaction.objectStore('files');
-
-                    // 确保文件数据有正确的ID
-                    if (!fileData.id) {
-                        fileData.id = Date.now().toString(); // 使用时间戳作为ID
-                    }
-
-                    const putRequest = store.put(fileData);
-
-                    putRequest.onsuccess = function () {
-                        console.log('文件已保存到本地IndexedDB:', fileData.fileName);
-                        // 更新文件显示
-                        displayUploadedFiles();
-                    };
-
-                    putRequest.onerror = function (event) {
-                        console.error('保存文件到本地IndexedDB失败:', event.target.error);
-                    };
-                };
-
-                request.onerror = function (event) {
-                    console.error('打开IndexedDB失败:', event.target.error);
-                };
-            }
-
-            function displayUploadedFiles() {
-                const request = indexedDB.open('fileRelayDB', 1);
-
-                request.onsuccess = function (event) {
-                    const db = event.target.result;
-                    const transaction = db.transaction(['files'], 'readonly');
-                    const store = transaction.objectStore('files');
-                    const getAll = store.getAll();
-
-                    getAll.onsuccess = function () {
-                        const files = getAll.result;
-                        const tableBody = document.querySelector('.files-table tbody');
-                        if (tableBody) {
-                            tableBody.innerHTML = '';
-
-                            files.forEach(file => {
-                                const row = document.createElement('tr');
-                                row.innerHTML = `
-                                    <td>${file.fileName}</td>
-                                    <td>${formatFileSize(file.fileSize)}</td>
-                                    <td>${file.pickupCode}</td>
-                                    <td>${formatDate(file.uploadTime)}</td>
-                                `;
-                                tableBody.appendChild(row);
-                            });
-                        }
-                    };
-
-                    getAll.onerror = function (event) {
-                        console.error('获取文件列表失败:', event.target.error);
-                    };
-                };
-            }
-
-            function formatFileSize(bytes) {
-                const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-                let size = bytes;
-                let unitIndex = 0;
-
-                while (size >= 1024 && unitIndex < units.length - 1) {
-                    size /= 1024;
-                    unitIndex++;
-                }
-
-                return size.toFixed(2) + ' ' + units[unitIndex];
-            }
-
-            function formatDate(timestamp) {
-                const date = new Date(timestamp);
-                return date.toLocaleString();
-            }
-
-            function setCookie(name, value, days) {
-                let expires = '';
-                if (days) {
-                    const date = new Date();
-                    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-                    expires = '; expires=' + date.toUTCString();
-                }
-                document.cookie = name + '=' + (value || '') + expires + '; path=/';
-            }
-
-            function getCookie(name) {
-                const nameEQ = name + '=';
-                const ca = document.cookie.split(';');
-                for (let i = 0; i < ca.length; i++) {
-                    let c = ca[i];
-                    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-                    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-                }
-                return null;
-            }
-
-            function showMessage(message, type) {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `message ${type}`;
-                messageDiv.textContent = message;
-                document.body.appendChild(messageDiv);
-
-                setTimeout(() => {
-                    messageDiv.remove();
-                }, 5000);
-            }
-
-            function initializeVIPUnlock() {
-                const unlockButton = document.getElementById('unlockVIPButton');
-                const vipModal = document.getElementById('vipUnlockModal');
-                const closeBtn = vipModal.querySelector('.close');
-                const validateBtn = document.getElementById('validateCard');
-                const cardInput = document.getElementById('cardInput');
-
-                // 格式化卡密输入
-                cardInput.addEventListener('input', function (e) {
-                    let value = e.target.value.replace(/[^A-Z0-9]/g, '');
-                    let formatted = '';
-                    for (let i = 0; i < value.length && i < 16; i++) {
-                        if (i > 0 && i % 4 === 0) {
-                            formatted += '-';
-                        }
-                        formatted += value[i];
-                    }
-                    e.target.value = formatted;
-                });
-
-                unlockButton.addEventListener('click', function () {
-                    vipModal.style.display = 'block';
-                });
-
-                closeBtn.addEventListener('click', function () {
-                    vipModal.style.display = 'none';
-                });
-
-                window.addEventListener('click', function (event) {
-                    if (event.target == vipModal) {
-                        vipModal.style.display = 'none';
-                    }
-                });
-
-                validateBtn.addEventListener('click', function () {
-                    const card = cardInput.value.trim();
-                    if (card.length !== 19) {
-                        alert('请输入完整的卡密');
-                        return;
-                    }
-
-                    if (conn) {
-                        conn.send({
-                            type: 'validateCard',
-                            card: card,
-                            userKey: currentUserKey
-                        });
-                    }
-                });
-            }
-
-            initialize();
-
-            uploadButton.addEventListener('click', function () {
-                const relayServerId = prompt('请输入中转服务器的ID:');
-                if (relayServerId) {
-                    connectToRelayServer(relayServerId);
-                    if (conn) {
-                        conn.on('open', uploadFile);
-                    }
-                }
-            });
-
-            downloadButton.addEventListener('click', downloadFile);
-
-            setKeyButton.addEventListener('click', function () {
-                const customKey = customKeyInput.value.trim();
-                if (customKey) {
-                    currentUserKey = customKey;
-                    userKeyDisplay.textContent = currentUserKey;
-                    saveUserKey(currentUserKey);
-                }
-            });
-
-            // 添加消息提示样式
-            const style = document.createElement('style');
-            style.textContent = `
-                .message {
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    padding: 15px 20px;
-                    border-radius: 4px;
-                    color: white;
-                    z-index: 1000;
-                    animation: slideIn 0.3s ease-out;
-                }
-
-                .success {
-                    background-color: #4CAF50;
-                }
-
-                .warning {
-                    background-color: #FF9800;
-                }
-
-                @keyframes slideIn {
-                    from {
-                        transform: translateX(100%);
-                        opacity: 0;
-                    }
-                    to {
-                        transform: translateX(0);
-                        opacity: 1;
-                    }
-                }
-            `;
-            document.head.appendChild(style);
-
-            // 添加历史记录样式
-            const historyStyle = document.createElement('style');
-            historyStyle.textContent = `
-                .history-list {
-                    max-height: 400px;
-                    overflow-y: auto;
-                }
-
-                .history-item {
-                    background-color: #2C2C2C;
-                    border-radius: 6px;
-                    padding: 15px;
-                    margin-bottom: 10px;
-                    border: 1px solid #444;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-
-                .history-info {
-                    flex: 1;
-                }
-
-                .history-actions {
-                    display: flex;
-                    gap: 10px;
-                }
-
-                .server-info,
-                .key-info {
-                    margin-bottom: 5px;
-                }
-
-                .time-info {
-                    font-size: 0.9em;
-                    color: #888;
-                    margin-top: 5px;
-                }
-
-                .btn-delete {
-                    background-color: #CF6679;
-                }
-
-                .btn-delete:hover {
-                    background-color: #B00020;
-                }
-
-                .modal {
-                    display: none;
-                    position: fixed;
-                    z-index: 9999;
-                    left: 0;
-                    top: 0;
-                    width: 100%;
-                    height: 100%;
-                    background-color: rgba(0, 0, 0, 0.5);
-                    backdrop-filter: blur(5px);
-                    overflow-y: auto;
-                }
-
-                .modal-content {
-                    position: relative;
-                    background-color: #1E1E1E;
-                    margin: 5vh auto;
-                    padding: 0;
-                    width: 80%;
-                    max-width: 800px;
-                    border-radius: 12px;
-                    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-                    border: 1px solid #333;
-                }
-
-                .modal-header {
-                    padding: 20px;
-                    border-bottom: 1px solid #333;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-
-                .modal-header h2 {
-                    margin: 0;
-                    color: #BB86FC;
-                }
-
-                .modal-body {
-                    padding: 20px;
-                }
-
-                .close {
-                    color: #aaa;
-                    font-size: 28px;
-                    font-weight: bold;
-                    cursor: pointer;
-                }
-
-                .close:hover {
-                    color: #BB86FC;
-                }
-            `;
-            document.head.appendChild(historyStyle);
-        })();
-    </script>
+    <script src="js/file-upload.js"></script>
 
     <style>
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .upload-section,
+      .result-section,
+      .download-section {
+        background-color: #1e1e1e;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        border: 1px solid #333;
+      }
+
+      .result-section.hidden {
+        display: none;
+      }
+
+      .result-item {
+        margin-bottom: 10px;
+      }
+
+      .label {
+        color: #bb86fc;
+        font-weight: bold;
+        margin-right: 10px;
+      }
+
+      .input-group {
+        margin-bottom: 15px;
+      }
+
+      .input-group label {
+        display: block;
+        margin-bottom: 5px;
+        color: #bb86fc;
+      }
+
+      .btn {
+        display: inline-block;
+        background-color: #3700b3;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+      }
+
+      .btn:hover {
+        background-color: #6200ee;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      }
+
+      .user-info {
+        background-color: #2c2c2c;
+        padding: 10px 15px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        border: 1px solid #444;
+      }
+
+      .user-info .label {
+        color: #bb86fc;
+        font-weight: bold;
+        margin-right: 10px;
+      }
+
+      #userKey {
+        color: #e0e0e0;
+        font-family: monospace;
+        background-color: #1e1e1e;
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid #333;
+      }
+
+      .key-input-group {
+        margin-bottom: 10px;
+      }
+
+      .key-warning {
+        background-color: #2c2c2c;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #444;
+      }
+
+      .warning-text {
+        color: #ff5722;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+
+      .btn-small {
+        padding: 8px 16px;
+      }
+
+      .user-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+      }
+
+      .btn-premium {
+        background: linear-gradient(135deg, #ffd700, #ffa500);
+        color: #1e1e1e;
+        font-weight: 600;
+        border: none;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .btn-premium:hover {
+        background: linear-gradient(135deg, #ffe44d, #ffb347);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+      }
+
+      .premium-icon {
+        margin-right: 5px;
+        font-size: 1.1em;
+      }
+
+      .premium-modal {
+        background: linear-gradient(135deg, #1e1e1e, #2c2c2c);
+        border: 1px solid rgba(255, 215, 0, 0.2);
+      }
+
+      .premium-modal .modal-header {
+        background: linear-gradient(
+          135deg,
+          rgba(255, 215, 0, 0.1),
+          rgba(255, 165, 0, 0.1)
+        );
+        border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+      }
+
+      .premium-modal h2 {
+        color: #ffd700;
+      }
+
+      .vip-benefits {
+        background: rgba(44, 44, 44, 0.5);
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+      }
+
+      .vip-benefits h3 {
+        color: #ffd700;
+        margin-bottom: 15px;
+      }
+
+      .vip-benefits ul {
+        list-style: none;
+        padding: 0;
+      }
+
+      .vip-benefits li {
+        margin-bottom: 10px;
+        color: #e0e0e0;
+        font-size: 0.95em;
+      }
+
+      .card-input {
+        background: rgba(44, 44, 44, 0.5);
+        padding: 20px;
+        border-radius: 12px;
+      }
+
+      .card-input label {
+        display: block;
+        color: #ffd700;
+        margin-bottom: 10px;
+        font-weight: 500;
+      }
+
+      .card-input input {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        background: rgba(20, 20, 20, 0.8);
+        border: 1px solid rgba(255, 215, 0, 0.2);
+        color: #e0e0e0;
+        font-size: 1.1em;
+        letter-spacing: 2px;
+        text-align: center;
+        transition: all 0.3s ease;
+      }
+
+      .card-input input:focus {
+        outline: none;
+        border-color: #ffd700;
+        box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.1);
+      }
+
+      .card-hint {
+        color: #666;
+        font-size: 0.9em;
+        margin-top: 8px;
+        text-align: center;
+      }
+
+      @keyframes glowing {
+        0% {
+          box-shadow: 0 0 5px #ffd700;
         }
 
-        .upload-section,
-        .result-section,
-        .download-section {
-            background-color: #1E1E1E;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-            border: 1px solid #333;
+        50% {
+          box-shadow: 0 0 20px #ffd700;
         }
 
-        .result-section.hidden {
-            display: none;
+        100% {
+          box-shadow: 0 0 5px #ffd700;
+        }
+      }
+
+      .btn-premium {
+        animation: glowing 2s infinite;
+      }
+
+      .announcement {
+        background: #2c2c2c;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+        border: 1px solid #444;
+        animation: fadeIn 0.5s ease-out;
+      }
+
+      .announcement h1 {
+        color: #fff;
+        font-size: 1.8em;
+        margin-bottom: 15px;
+        border-bottom: 2px solid #444;
+        padding-bottom: 10px;
+      }
+
+      .announcement h2 {
+        color: #fff;
+        font-size: 1.5em;
+        margin: 15px 0;
+      }
+
+      .announcement p {
+        color: #ddd;
+        line-height: 1.6;
+        margin: 10px 0;
+      }
+
+      .announcement ul,
+      .announcement ol {
+        color: #ddd;
+        margin: 10px 0;
+        padding-left: 20px;
+      }
+
+      .announcement code {
+        background: #1a1a1a;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: monospace;
+      }
+
+      .announcement pre {
+        background: #1a1a1a;
+        padding: 15px;
+        border-radius: 6px;
+        overflow-x: auto;
+        margin: 15px 0;
+      }
+
+      .announcement blockquote {
+        border-left: 4px solid #444;
+        margin: 15px 0;
+        padding: 10px 20px;
+        background: #1a1a1a;
+      }
+
+      .announcement a {
+        color: #64b5f6;
+        text-decoration: none;
+        transition: color 0.3s;
+      }
+
+      .announcement a:hover {
+        color: #90caf9;
+        text-decoration: underline;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
         }
 
-        .result-item {
-            margin-bottom: 10px;
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
-
-        .label {
-            color: #BB86FC;
-            font-weight: bold;
-            margin-right: 10px;
-        }
-
-        .input-group {
-            margin-bottom: 15px;
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #BB86FC;
-        }
-
-        .btn {
-            display: inline-block;
-            background-color: #3700B3;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 4px;
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-        }
-
-        .btn:hover {
-            background-color: #6200EE;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .user-info {
-            background-color: #2C2C2C;
-            padding: 10px 15px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            border: 1px solid #444;
-        }
-
-        .user-info .label {
-            color: #BB86FC;
-            font-weight: bold;
-            margin-right: 10px;
-        }
-
-        #userKey {
-            color: #e0e0e0;
-            font-family: monospace;
-            background-color: #1E1E1E;
-            padding: 3px 8px;
-            border-radius: 4px;
-            border: 1px solid #333;
-        }
-
-        .key-input-group {
-            margin-bottom: 10px;
-        }
-
-        .key-warning {
-            background-color: #2C2C2C;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #444;
-        }
-
-        .warning-text {
-            color: #FF5722;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        .btn-small {
-            padding: 8px 16px;
-        }
-
-        .user-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .btn-premium {
-            background: linear-gradient(135deg, #FFD700, #FFA500);
-            color: #1E1E1E;
-            font-weight: 600;
-            border: none;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-premium:hover {
-            background: linear-gradient(135deg, #FFE44D, #FFB347);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
-        }
-
-        .premium-icon {
-            margin-right: 5px;
-            font-size: 1.1em;
-        }
-
-        .premium-modal {
-            background: linear-gradient(135deg, #1E1E1E, #2C2C2C);
-            border: 1px solid rgba(255, 215, 0, 0.2);
-        }
-
-        .premium-modal .modal-header {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 165, 0, 0.1));
-            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
-        }
-
-        .premium-modal h2 {
-            color: #FFD700;
-        }
-
-        .vip-benefits {
-            background: rgba(44, 44, 44, 0.5);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-        }
-
-        .vip-benefits h3 {
-            color: #FFD700;
-            margin-bottom: 15px;
-        }
-
-        .vip-benefits ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .vip-benefits li {
-            margin-bottom: 10px;
-            color: #e0e0e0;
-            font-size: 0.95em;
-        }
-
-        .card-input {
-            background: rgba(44, 44, 44, 0.5);
-            padding: 20px;
-            border-radius: 12px;
-        }
-
-        .card-input label {
-            display: block;
-            color: #FFD700;
-            margin-bottom: 10px;
-            font-weight: 500;
-        }
-
-        .card-input input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            background: rgba(20, 20, 20, 0.8);
-            border: 1px solid rgba(255, 215, 0, 0.2);
-            color: #e0e0e0;
-            font-size: 1.1em;
-            letter-spacing: 2px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .card-input input:focus {
-            outline: none;
-            border-color: #FFD700;
-            box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.1);
-        }
-
-        .card-hint {
-            color: #666;
-            font-size: 0.9em;
-            margin-top: 8px;
-            text-align: center;
-        }
-
-        @keyframes glowing {
-            0% {
-                box-shadow: 0 0 5px #FFD700;
-            }
-
-            50% {
-                box-shadow: 0 0 20px #FFD700;
-            }
-
-            100% {
-                box-shadow: 0 0 5px #FFD700;
-            }
-        }
-
-        .btn-premium {
-            animation: glowing 2s infinite;
-        }
+      }
     </style>
-</body>
-
+  </body>
 </html>

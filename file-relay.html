@@ -1,0 +1,1851 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peer-to-Peer 文件传输 - 中转服务器</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Peer-to-Peer 文件传输 - 中转服务器</h1>
+
+        <div class="settings-section">
+            <h3>服务器设置</h3>
+            <div class="settings-group">
+                <div class="setting-item glass-effect">
+                    <label for="maxFileSize">最大文件大小 (MB):</label>
+                    <input type="number" id="maxFileSize" value="100" min="1" max="1024">
+                </div>
+                <div class="setting-item glass-effect">
+                    <label for="expirationDays">文件过期时间 (天):</label>
+                    <input type="number" id="expirationDays" value="7" min="1">
+                </div>
+                <div class="setting-item glass-effect">
+                    <label for="enableGuestUpload">允许访客上传:</label>
+                    <input type="checkbox" id="enableGuestUpload" checked>
+                </div>
+                <div class="setting-item glass-effect">
+                    <label for="enableGuestDownload">允许访客下载:</label>
+                    <input type="checkbox" id="enableGuestDownload" checked>
+                </div>
+                <div class="setting-item glass-effect">
+                    <label for="guestDailyDownloadLimit">访客每日下载次数限制:</label>
+                    <input type="number" id="guestDailyDownloadLimit" value="10" min="0">
+                </div>
+                <div class="setting-item glass-effect">
+                    <label for="enableVIP">启用会员服务:</label>
+                    <input type="checkbox" id="enableVIP">
+                </div>
+                <div class="settings-buttons">
+                    <button id="vipSettings" class="btn glow-effect" style="display: none;">会员设置</button>
+                    <button id="cardManager" class="btn glow-effect">卡密管理</button>
+                    <button id="saveSettings" class="btn glow-effect">保存设置</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h3>服务器信息</h3>
+            <div class="info-item">
+                <span class="label">服务器ID:</span>
+                <span id="serverId"></span>
+            </div>
+            <div class="info-item">
+                <span class="label">连接状态:</span>
+                <span id="connectionStatus">等待连接...</span>
+            </div>
+        </div>
+
+        <div class="tab-container">
+            <div class="tab-header">
+                <button class="tab-button active" data-tab="files">文件管理</button>
+                <button class="tab-button" data-tab="users">用户管理</button>
+            </div>
+
+            <div class="tab-content">
+                <div class="tab-pane active" id="files-tab">
+                    <div class="files-section">
+                        <h3>已上传的文件</h3>
+                        <table id="filesTable">
+                            <thead>
+                                <tr>
+                                    <th>文件名</th>
+                                    <th>文件大小</th>
+                                    <th>取件码</th>
+                                    <th>上传时间</th>
+                                    <th>过期时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tab-pane" id="users-tab">
+                    <div class="users-section">
+                        <h3>用户管理</h3>
+                        <table id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>用户Key</th>
+                                    <th>创建时间</th>
+                                    <th>会员状态</th>
+                                    <th>今日下载次数</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIP设置弹窗 -->
+    <div id="vipModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>会员服务设置</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="vip-setting-item">
+                    <label>
+                        <input type="checkbox" id="vipUploadEnabled" checked>
+                        启用上传权限
+                    </label>
+                </div>
+                <div class="vip-setting-item">
+                    <label>
+                        <input type="checkbox" id="vipDownloadEnabled" checked>
+                        启用下载权限
+                    </label>
+                </div>
+                <div class="vip-setting-item">
+                    <label for="vipDailyDownloadLimit">每日下载次数限制:</label>
+                    <input type="number" id="vipDailyDownloadLimit" value="0" min="0">
+                    <span class="hint">（0表示无限制）</span>
+                </div>
+                <div class="vip-setting-item">
+                    <label for="vipMaxFileSize">会员文件大小限制 (MB):</label>
+                    <input type="number" id="vipMaxFileSize" value="1024" min="1">
+                </div>
+                <div class="vip-setting-item">
+                    <label for="vipExpirationDays">会员文件过期时间 (天):</label>
+                    <input type="number" id="vipExpirationDays" value="30" min="1">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveVipSettings" class="btn">保存设置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 卡密管理弹窗 -->
+    <div id="cardModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>卡密管理</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="card-generator">
+                    <div class="input-group">
+                        <label for="cardCount">生成数量:</label>
+                        <input type="number" id="cardCount" value="5" min="1" max="100">
+                        <button id="generateCards" class="btn glow-effect">生成卡密</button>
+                        <button id="exportCards" class="btn glow-effect">导出卡密</button>
+                    </div>
+                </div>
+                <div class="card-list">
+                    <h3>已生成的卡密</h3>
+                    <div class="table-container">
+                        <table id="cardsTable">
+                            <thead>
+                                <tr>
+                                    <th>卡密</th>
+                                    <th>生成时间</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script>
+    <script>
+        (function () {
+            const serverId = document.getElementById('serverId');
+            const connectionStatus = document.getElementById('connectionStatus');
+            const filesTable = document.getElementById('filesTable');
+            const maxFileSizeInput = document.getElementById('maxFileSize');
+            const expirationDaysInput = document.getElementById('expirationDays');
+            const saveSettingsButton = document.getElementById('saveSettings');
+
+            let peer;
+            let db;
+            let settings = {
+                maxFileSize: 100, // MB
+                expirationDays: 7,
+                enableVIP: false,
+                enableGuestUpload: true,
+                enableGuestDownload: true,
+                guestDailyDownloadLimit: 10,
+                vipSettings: {
+                    uploadEnabled: true,
+                    downloadEnabled: true,
+                    dailyDownloadLimit: 0,
+                    maxFileSize: 1024,
+                    expirationDays: 30
+                }
+            };
+
+            // 初始化数据库
+            db = {
+                files: {},
+                users: {},
+                userStats: {},
+                cards: {} // 新增卡密存储
+            };
+
+            // 用于跟踪每日下载次数的对象
+            let dailyDownloads = {};
+
+            // 重置每日下载次数
+            function resetDailyDownloads() {
+                const now = new Date();
+                const today = now.toDateString();
+
+                // 如果日期变了，重置所有用户的下载次数
+                if (!dailyDownloads.date || dailyDownloads.date !== today) {
+                    dailyDownloads = {
+                        date: today,
+                        users: {}
+                    };
+                    // 保存到localStorage
+                    localStorage.setItem('dailyDownloads', JSON.stringify(dailyDownloads));
+                }
+            }
+
+            // 加载每日下载次数
+            function loadDailyDownloads() {
+                const saved = localStorage.getItem('dailyDownloads');
+                if (saved) {
+                    dailyDownloads = JSON.parse(saved);
+                }
+                resetDailyDownloads();
+            }
+
+            // 更新用户下载次数
+            function updateUserDownloads(userKey) {
+                resetDailyDownloads();
+                if (!dailyDownloads.users[userKey]) {
+                    dailyDownloads.users[userKey] = 0;
+                }
+                dailyDownloads.users[userKey]++;
+                localStorage.setItem('dailyDownloads', JSON.stringify(dailyDownloads));
+                updateUsersTable();
+            }
+
+            // 更新用户表格
+            function updateUsersTable() {
+                const tbody = document.querySelector('#usersTable tbody');
+                tbody.innerHTML = '';
+
+                Object.entries(db.users).forEach(([key, user]) => {
+                    const tr = document.createElement('tr');
+                    const downloads = dailyDownloads.users[key] || 0;
+
+                    tr.innerHTML = `
+                        <td>${key}</td>
+                        <td>${new Date(user.createdAt).toLocaleString()}</td>
+                        <td>
+                            <button class="btn-small ${user.isMember ? 'btn-member' : ''}" 
+                                    onclick="toggleMemberStatus('${key}')">
+                                ${user.isMember ? '会员' : '非会员'}
+                            </button>
+                        </td>
+                        <td>${downloads}</td>
+                        <td>${user.isBanned ? '已封禁' : '正常'}</td>
+                        <td>
+                            <button class="btn-small ${user.isBanned ? 'btn-unbanned' : 'btn-banned'}" 
+                                    onclick="toggleBanStatus('${key}')">
+                                ${user.isBanned ? '解封' : '封禁'}
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // 切换会员状态
+            function toggleMemberStatus(userKey) {
+                if (db.users[userKey]) {
+                    db.users[userKey].isMember = !db.users[userKey].isMember;
+                    localStorage.setItem('users', JSON.stringify(db.users));
+                    updateUsersTable();
+                }
+            }
+
+            // 切换封禁状态
+            function toggleBanStatus(userKey) {
+                if (db.users[userKey]) {
+                    db.users[userKey].isBanned = !db.users[userKey].isBanned;
+                    localStorage.setItem('users', JSON.stringify(db.users));
+                    updateUsersTable();
+                }
+            }
+
+            // 初始化tab切换
+            function initializeTabs() {
+                const tabButtons = document.querySelectorAll('.tab-button');
+                const tabPanes = document.querySelectorAll('.tab-pane');
+
+                tabButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        // 移除所有active类
+                        tabButtons.forEach(btn => btn.classList.remove('active'));
+                        tabPanes.forEach(pane => pane.classList.remove('active'));
+
+                        // 添加active类到当前选中的tab
+                        button.classList.add('active');
+                        const tabId = button.getAttribute('data-tab');
+                        document.getElementById(`${tabId}-tab`).classList.add('active');
+                    });
+                });
+            }
+
+            function initialize() {
+                initializeTabs();
+                initializeCardManager(); // 初始化卡密管理
+                openDatabase();
+                loadSettings();
+
+                peer = new Peer(null, {
+                    debug: 2
+                });
+
+                peer.on('open', function (id) {
+                    console.log('Server peer ID is: ' + id);
+                    serverId.textContent = id;
+                });
+
+                peer.on('connection', function (conn) {
+                    console.log('收到连接请求');
+
+                    conn.on('open', function () {
+                        console.log('连接已打开');
+                        connectionStatus.textContent = '已连接';
+
+                        // 检查是否启用会员服务
+                        if (settings.enableVIP) {
+                            conn.send({
+                                type: 'membershipStatus',
+                                enabled: true,
+                                isMember: false // 默认为非会员，在收到用户key后再更新
+                            });
+                        }
+                    });
+
+                    conn.on('data', function (data) {
+                        if (data.type === 'setKey') {
+                            const userKey = data.key || generateUserKey();
+
+                            // 检查用户是否被封禁
+                            if (db.users[userKey] && db.users[userKey].isBanned) {
+                                conn.send({
+                                    type: 'keyStatus',
+                                    success: false,
+                                    error: '您的账号已被封禁'
+                                });
+                                return;
+                            }
+
+                            // 如果是新用户，创建用户记录
+                            if (!db.users[userKey]) {
+                                db.users[userKey] = {
+                                    createdAt: new Date().toISOString(),
+                                    isMember: false,
+                                    isBanned: false
+                                };
+                                localStorage.setItem('users', JSON.stringify(db.users));
+                                updateUsersTable();
+                            }
+
+                            conn.send({
+                                type: 'keyStatus',
+                                success: true,
+                                key: userKey,
+                                isExisting: !!data.key
+                            });
+
+                            // 在验证用户key后，发送更新的会员状态
+                            if (settings.enableVIP) {
+                                conn.send({
+                                    type: 'membershipStatus',
+                                    enabled: true,
+                                    isMember: db.users[userKey] && db.users[userKey].isMember || false
+                                });
+                            }
+                        } else if (data.type === 'upload') {
+                            handleFileUpload(data, conn);
+                        } else if (data.type === 'download') {
+                            handleFileDownload(conn, data.pickupCode, data.userKey);
+                        } else if (data.type === 'validateCard') {
+                            const card = data.card;
+                            const userKey = data.userKey;
+
+                            // 检查卡密是否存在且未使用
+                            if (db.cards && db.cards[card] && !db.cards[card].used) {
+                                // 更新用户为会员
+                                if (!db.users[userKey]) {
+                                    db.users[userKey] = {
+                                        createdAt: Date.now(),
+                                        isMember: true,
+                                        dailyDownloads: 0,
+                                        lastDownloadDate: null,
+                                        isBanned: false
+                                    };
+                                } else {
+                                    db.users[userKey].isMember = true;
+                                }
+
+                                // 标记卡密为已使用
+                                db.cards[card].used = true;
+                                db.cards[card].usedBy = userKey;
+                                db.cards[card].usedAt = Date.now();
+
+                                // 保存更新后的数据
+                                localStorage.setItem('fileRelayDB', JSON.stringify(db));
+
+                                // 发送成功响应
+                                conn.send({
+                                    type: 'cardValidation',
+                                    success: true,
+                                    message: '会员解锁成功！您现在可以享受会员特权了。'
+                                });
+                            } else {
+                                // 发送失败响应
+                                conn.send({
+                                    type: 'cardValidation',
+                                    success: false,
+                                    error: '无效的卡密或卡密已被使用'
+                                });
+                            }
+                        }
+                    });
+
+                    conn.on('close', function () {
+                        console.log('Connection closed');
+                        connectionStatus.textContent = '等待连接...';
+                    });
+
+                    conn.on('error', function (err) {
+                        console.error('Connection error:', err);
+                        connectionStatus.textContent = '连接错误';
+                    });
+                });
+
+                // 初始化会员设置相关事件
+                initializeVIPSettings();
+
+                // 加载已保存的数据
+                const savedFiles = localStorage.getItem('files');
+                const savedUsers = localStorage.getItem('users');
+                const savedCards = localStorage.getItem('cards');
+
+                if (savedFiles) {
+                    db.files = JSON.parse(savedFiles);
+                }
+                if (savedUsers) {
+                    db.users = JSON.parse(savedUsers);
+                }
+                if (savedCards) {
+                    db.cards = JSON.parse(savedCards);
+                }
+
+                loadDailyDownloads();
+                updateUsersTable();
+            }
+
+            function generateUserKey() {
+                const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                const length = 16;
+                let key = '';
+                for (let i = 0; i < length; i++) {
+                    key += characters.charAt(Math.floor(Math.random() * characters.length));
+                }
+                return key;
+            }
+
+            async function storeUserKey(key) {
+                try {
+                    const transaction = db.transaction(['users'], 'readwrite');
+                    const objectStore = transaction.objectStore('users');
+                    await objectStore.put({ key: key, createdAt: new Date().toISOString() });
+                } catch (error) {
+                    console.error('Error storing user key:', error);
+                }
+            }
+
+            async function checkUserVIP(key) {
+                try {
+                    if (!key) return false;
+                    const transaction = db.transaction(['users'], 'readonly');
+                    const objectStore = transaction.objectStore('users');
+                    const user = await objectStore.get(key);
+                    return user !== undefined;
+                } catch (error) {
+                    console.error('Error checking VIP status:', error);
+                    return false;
+                }
+            }
+
+            async function getDailyDownloadCount(key) {
+                try {
+                    const transaction = db.transaction(['downloads'], 'readonly');
+                    const objectStore = transaction.objectStore('downloads');
+                    const today = new Date().toISOString().split('T')[0];
+                    const downloads = await objectStore.index('userKey_date').getAll([key, today]);
+                    return downloads.length;
+                } catch (error) {
+                    console.error('Error getting download count:', error);
+                    return 0;
+                }
+            }
+
+            async function checkUserKey(key) {
+                try {
+                    const transaction = db.transaction(['users'], 'readonly');
+                    const objectStore = transaction.objectStore('users');
+                    const user = await objectStore.get(key);
+                    return user !== undefined;
+                } catch (error) {
+                    console.error('Error checking user key:', error);
+                    return false;
+                }
+            }
+
+            function initializeVIPSettings() {
+                try {
+                    const modal = document.getElementById('vipModal');
+                    const vipSettingsBtn = document.getElementById('vipSettings');
+                    const closeBtn = document.querySelector('.close');
+                    const enableVIPCheckbox = document.getElementById('enableVIP');
+                    const saveVipSettingsBtn = document.getElementById('saveVipSettings');
+
+                    if (!modal || !vipSettingsBtn || !closeBtn || !enableVIPCheckbox || !saveVipSettingsBtn) {
+                        console.error('VIP settings elements not found');
+                        return;
+                    }
+
+                    // 显示/隐藏会员设置按钮
+                    enableVIPCheckbox.addEventListener('change', function () {
+                        vipSettingsBtn.style.display = this.checked ? 'inline-block' : 'none';
+                        settings.enableVIP = this.checked;
+                    });
+
+                    // 打开弹窗
+                    vipSettingsBtn.addEventListener('click', function () {
+                        modal.style.display = 'block';
+                        // 加载当前设置
+                        document.getElementById('vipUploadEnabled').checked = settings.vipSettings.uploadEnabled;
+                        document.getElementById('vipDownloadEnabled').checked = settings.vipSettings.downloadEnabled;
+                        document.getElementById('vipDailyDownloadLimit').value = settings.vipSettings.dailyDownloadLimit;
+                        document.getElementById('vipMaxFileSize').value = settings.vipSettings.maxFileSize;
+                        document.getElementById('vipExpirationDays').value = settings.vipSettings.expirationDays;
+                    });
+
+                    // 关闭弹窗
+                    closeBtn.addEventListener('click', function () {
+                        modal.style.display = 'none';
+                    });
+
+                    // 点击弹窗外部关闭
+                    window.addEventListener('click', function (event) {
+                        if (event.target == modal) {
+                            modal.style.display = 'none';
+                        }
+                    });
+
+                    // 保存会员设置
+                    saveVipSettingsBtn.addEventListener('click', function () {
+                        try {
+                            const uploadEnabled = document.getElementById('vipUploadEnabled').checked;
+                            const downloadEnabled = document.getElementById('vipDownloadEnabled').checked;
+                            const dailyDownloadLimit = parseInt(document.getElementById('vipDailyDownloadLimit').value) || 0;
+                            const maxFileSize = parseInt(document.getElementById('vipMaxFileSize').value) || 1024;
+                            const expirationDays = parseInt(document.getElementById('vipExpirationDays').value) || 30;
+
+                            settings.vipSettings = {
+                                uploadEnabled,
+                                downloadEnabled,
+                                dailyDownloadLimit,
+                                maxFileSize,
+                                expirationDays
+                            };
+
+                            localStorage.setItem('relaySettings', JSON.stringify(settings));
+                            modal.style.display = 'none';
+                            console.log('VIP settings saved:', settings.vipSettings);
+                        } catch (error) {
+                            console.error('Error saving VIP settings:', error);
+                            alert('保存设置时发生错误，请重试');
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error initializing VIP settings:', error);
+                }
+            }
+
+            function openDatabase() {
+                // 初始化IndexedDB
+                const request = indexedDB.open('fileRelayDB', 1);
+
+                request.onerror = function (event) {
+                    console.error('数据库错误:', event.target.error);
+                };
+
+                request.onupgradeneeded = function (event) {
+                    const db = event.target.result;
+
+                    // 创建文件存储
+                    if (!db.objectStoreNames.contains('files')) {
+                        const filesStore = db.createObjectStore('files', { keyPath: 'id' });
+                        // 添加索引以便按上传时间和用户Key查询
+                        filesStore.createIndex('uploadTime', 'uploadTime', { unique: false });
+                        filesStore.createIndex('userKey', 'userKey', { unique: false });
+                        filesStore.createIndex('pickupCode', 'pickupCode', { unique: true });
+                    }
+
+                    // 创建用户存储
+                    if (!db.objectStoreNames.contains('users')) {
+                        db.createObjectStore('users', { keyPath: 'id' });
+                    }
+
+                    // 创建下载记录存储
+                    if (!db.objectStoreNames.contains('downloads')) {
+                        const downloadsStore = db.createObjectStore('downloads', { keyPath: 'id', autoIncrement: true });
+                        // 添加复合索引以便按用户和日期查询
+                        downloadsStore.createIndex('userKey_date', ['userKey', 'date'], { unique: false });
+                    }
+
+                    // 创建卡密存储
+                    if (!db.objectStoreNames.contains('cards')) {
+                        const cardsStore = db.createObjectStore('cards', { keyPath: 'id' });
+                        cardsStore.createIndex('used', 'used', { unique: false });
+                    }
+                };
+
+                request.onsuccess = function (event) {
+                    console.log('IndexedDB初始化成功');
+
+                    // 从localStorage迁移数据到IndexedDB（仅在首次运行时）
+                    migrateDataFromLocalStorage();
+                };
+            }
+
+            // 从localStorage迁移数据到IndexedDB
+            function migrateDataFromLocalStorage() {
+                const savedFiles = localStorage.getItem('files');
+                const savedUsers = localStorage.getItem('users');
+                const savedCards = localStorage.getItem('cards');
+
+                // 初始化内存中的数据结构（兼容性）
+                if (!db.files) db.files = {};
+                if (!db.users) db.users = {};
+                if (!db.cards) db.cards = {};
+
+                const request = indexedDB.open('fileRelayDB', 1);
+
+                request.onsuccess = function (event) {
+                    const idb = event.target.result;
+
+                    // 迁移文件数据
+                    if (savedFiles) {
+                        const files = JSON.parse(savedFiles);
+                        const transaction = idb.transaction(['files'], 'readwrite');
+                        const store = transaction.objectStore('files');
+
+                        Object.entries(files).forEach(([pickupCode, fileData]) => {
+                            // 保存到内存中（兼容性）
+                            db.files[pickupCode] = fileData;
+
+                            // 保存到IndexedDB
+                            const fileRecord = {
+                                id: pickupCode,
+                                ...fileData
+                            };
+                            store.put(fileRecord);
+                        });
+                    }
+
+                    // 迁移用户数据
+                    if (savedUsers) {
+                        const users = JSON.parse(savedUsers);
+                        db.users = users; // 保存到内存中（兼容性）
+                    }
+
+                    // 迁移卡密数据
+                    if (savedCards) {
+                        const cards = JSON.parse(savedCards);
+                        db.cards = cards; // 保存到内存中（兼容性）
+                    }
+                };
+            }
+
+            async function handleFileUpload(data, conn) {
+                const userKey = data.userKey;
+                const user = db.users[userKey];
+                const isVIP = user?.isMember || false;
+
+                // 检查上传权限
+                if (!settings.enableGuestUpload && !isVIP) {
+                    conn.send({
+                        type: 'uploadResult',
+                        success: false,
+                        error: '访客上传功能已禁用'
+                    });
+                    return;
+                }
+
+                if (settings.enableVIP && isVIP && !settings.vipSettings.uploadEnabled) {
+                    conn.send({
+                        type: 'uploadResult',
+                        success: false,
+                        error: '会员上传功能已禁用'
+                    });
+                    return;
+                }
+
+                const now = new Date();
+                const expirationDays = isVIP ? settings.vipSettings.expirationDays : settings.expirationDays;
+                const expirationTime = new Date(now.getTime() + expirationDays * 24 * 60 * 60 * 1000);
+
+                const fileData = {
+                    fileName: data.fileName,
+                    fileSize: data.fileSize,
+                    fileData: data.fileData,
+                    pickupCode: data.pickupCode,
+                    userKey: data.userKey,
+                    uploadTime: now.toISOString(),
+                    expirationTime: expirationTime.toISOString()
+                };
+
+                try {
+                    // 使用IndexedDB存储文件数据
+                    const request = indexedDB.open('fileRelayDB', 1);
+
+                    request.onsuccess = function (event) {
+                        const db = event.target.result;
+                        const transaction = db.transaction(['files'], 'readwrite');
+                        const store = transaction.objectStore('files');
+
+                        // 使用pickupCode作为键存储文件数据
+                        const fileRecord = {
+                            id: data.pickupCode,
+                            ...fileData
+                        };
+
+                        const putRequest = store.put(fileRecord);
+
+                        putRequest.onsuccess = function () {
+                            console.log('File uploaded successfully to IndexedDB');
+                            displayUploadedFiles();
+                            conn.send({
+                                type: 'uploadResult',
+                                success: true,
+                                expirationTime: expirationTime.toISOString()
+                            });
+                        };
+
+                        putRequest.onerror = function (event) {
+                            console.error('Error storing file in IndexedDB:', event.target.error);
+                            conn.send({
+                                type: 'uploadResult',
+                                success: false,
+                                error: '文件上传失败'
+                            });
+                        };
+                    };
+
+                    request.onerror = function (event) {
+                        console.error('Error opening database:', event.target.error);
+                        conn.send({
+                            type: 'uploadResult',
+                            success: false,
+                            error: '数据库错误，文件上传失败'
+                        });
+                    };
+
+                    // 保持兼容性，同时更新内存中的数据
+                    if (!db.files) {
+                        db.files = {};
+                    }
+                    db.files[data.pickupCode] = fileData;
+                } catch (error) {
+                    console.error('Error uploading file:', error);
+                    conn.send({
+                        type: 'uploadResult',
+                        success: false,
+                        error: '文件上传失败'
+                    });
+                }
+            }
+
+            async function handleFileDownload(conn, pickupCode, userKey) {
+                const user = db.users[userKey];
+                const isVIP = user?.isMember || false;
+
+                // 检查下载权限
+                if (!settings.enableGuestDownload && !isVIP) {
+                    conn.send({
+                        type: 'downloadResult',
+                        success: false,
+                        error: '访客下载功能已禁用'
+                    });
+                    return;
+                }
+
+                if (settings.enableVIP && isVIP && !settings.vipSettings.downloadEnabled) {
+                    conn.send({
+                        type: 'downloadResult',
+                        success: false,
+                        error: '会员下载功能已禁用'
+                    });
+                    return;
+                }
+
+                // 检查下载次数限制
+                const downloads = dailyDownloads.users[userKey] || 0;
+                if (!isVIP && settings.guestDailyDownloadLimit > 0 && downloads >= settings.guestDailyDownloadLimit) {
+                    conn.send({
+                        type: 'downloadResult',
+                        success: false,
+                        error: `已达到访客每日下载次数限制 (${settings.guestDailyDownloadLimit}次)`
+                    });
+                    return;
+                }
+
+                if (isVIP && settings.vipSettings.dailyDownloadLimit > 0 && downloads >= settings.vipSettings.dailyDownloadLimit) {
+                    conn.send({
+                        type: 'downloadResult',
+                        success: false,
+                        error: `已达到会员每日下载次数限制 (${settings.vipSettings.dailyDownloadLimit}次)`
+                    });
+                    return;
+                }
+
+                try {
+                    // 从IndexedDB获取文件数据
+                    const request = indexedDB.open('fileRelayDB', 1);
+
+                    request.onsuccess = function (event) {
+                        const db = event.target.result;
+                        const transaction = db.transaction(['files'], 'readonly');
+                        const store = transaction.objectStore('files');
+
+                        // 使用pickupCode作为键获取文件数据
+                        const getRequest = store.get(pickupCode);
+
+                        getRequest.onsuccess = function (event) {
+                            const fileData = event.target.result;
+
+                            if (fileData) {
+                                // 检查是否过期
+                                if (new Date(fileData.expirationTime) < new Date()) {
+                                    conn.send({
+                                        type: 'downloadResult',
+                                        success: false,
+                                        error: '文件已过期'
+                                    });
+                                    deleteFile(pickupCode);
+                                    return;
+                                }
+
+                                // 记录下载
+                                updateUserDownloads(userKey);
+
+                                conn.send({
+                                    type: 'downloadResult',
+                                    success: true,
+                                    fileName: fileData.fileName,
+                                    fileData: fileData.fileData,
+                                    expirationTime: fileData.expirationTime,
+                                    uploaderKey: fileData.userKey
+                                });
+                            } else {
+                                // 尝试从内存中获取（兼容旧数据）
+                                const memoryFileData = db.files[pickupCode];
+
+                                if (memoryFileData) {
+                                    // 检查是否过期
+                                    if (new Date(memoryFileData.expirationTime) < new Date()) {
+                                        conn.send({
+                                            type: 'downloadResult',
+                                            success: false,
+                                            error: '文件已过期'
+                                        });
+                                        deleteFile(pickupCode);
+                                        return;
+                                    }
+
+                                    // 记录下载
+                                    updateUserDownloads(userKey);
+
+                                    conn.send({
+                                        type: 'downloadResult',
+                                        success: true,
+                                        fileName: memoryFileData.fileName,
+                                        fileData: memoryFileData.fileData,
+                                        expirationTime: memoryFileData.expirationTime,
+                                        uploaderKey: memoryFileData.userKey
+                                    });
+
+                                    // 将内存中的数据保存到IndexedDB中
+                                    saveFileToIndexedDB(memoryFileData, pickupCode);
+                                } else {
+                                    conn.send({
+                                        type: 'downloadResult',
+                                        success: false,
+                                        error: '文件未找到'
+                                    });
+                                }
+                            }
+                        };
+
+                        getRequest.onerror = function (event) {
+                            console.error('Error retrieving file from IndexedDB:', event.target.error);
+                            conn.send({
+                                type: 'downloadResult',
+                                success: false,
+                                error: '文件检索失败'
+                            });
+                        };
+                    };
+
+                    request.onerror = function (event) {
+                        console.error('Error opening database:', event.target.error);
+                        conn.send({
+                            type: 'downloadResult',
+                            success: false,
+                            error: '数据库错误，文件检索失败'
+                        });
+                    };
+                } catch (error) {
+                    console.error('Error retrieving file:', error);
+                    conn.send({
+                        type: 'downloadResult',
+                        success: false,
+                        error: '文件检索失败'
+                    });
+                }
+            }
+
+            // 辅助函数：将文件保存到IndexedDB
+            function saveFileToIndexedDB(fileData, pickupCode) {
+                const request = indexedDB.open('fileRelayDB', 1);
+
+                request.onsuccess = function (event) {
+                    const db = event.target.result;
+                    const transaction = db.transaction(['files'], 'readwrite');
+                    const store = transaction.objectStore('files');
+
+                    const fileRecord = {
+                        id: pickupCode,
+                        ...fileData
+                    };
+
+                    store.put(fileRecord);
+                };
+
+                request.onerror = function (event) {
+                    console.error('Error opening database for saving file:', event.target.error);
+                };
+            }
+
+            function deleteFile(pickupCode) {
+                // 从IndexedDB中删除文件
+                const request = indexedDB.open('fileRelayDB', 1);
+
+                request.onsuccess = function (event) {
+                    const db = event.target.result;
+                    const transaction = db.transaction(['files'], 'readwrite');
+                    const store = transaction.objectStore('files');
+
+                    const deleteRequest = store.delete(pickupCode);
+
+                    deleteRequest.onsuccess = function () {
+                        console.log('File deleted successfully from IndexedDB');
+
+                        // 同时从内存中删除（保持兼容性）
+                        if (window.db && window.db.files && window.db.files[pickupCode]) {
+                            delete window.db.files[pickupCode];
+                        }
+
+                        displayUploadedFiles();
+                    };
+
+                    deleteRequest.onerror = function (event) {
+                        console.error('Error deleting file from IndexedDB:', event.target.error);
+                    };
+                };
+
+                request.onerror = function (event) {
+                    console.error('Error opening database for deleting file:', event.target.error);
+                };
+            }
+
+            async function cleanupExpiredFiles() {
+                try {
+                    const request = indexedDB.open('fileRelayDB', 1);
+
+                    request.onsuccess = function (event) {
+                        const db = event.target.result;
+                        const transaction = db.transaction(['files'], 'readwrite');
+                        const store = transaction.objectStore('files');
+                        const now = Date.now();
+
+                        const getAll = store.getAll();
+
+                        getAll.onsuccess = function () {
+                            const files = getAll.result;
+                            files.forEach(file => {
+                                if (file.expirationTime && new Date(file.expirationTime).getTime() < now) {
+                                    store.delete(file.id);
+                                }
+                            });
+                            displayUploadedFiles();
+                        };
+                    };
+                } catch (error) {
+                    console.error('Error during cleanup:', error);
+                }
+            }
+
+            async function displayUploadedFiles() {
+                try {
+                    const request = indexedDB.open('fileRelayDB', 1);
+
+                    request.onsuccess = function (event) {
+                        const db = event.target.result;
+                        const transaction = db.transaction(['files'], 'readonly');
+                        const store = transaction.objectStore('files');
+                        const getAll = store.getAll();
+
+                        getAll.onsuccess = function () {
+                            const files = getAll.result;
+                            const tableBody = document.querySelector('.files-table tbody');
+                            if (tableBody) {
+                                tableBody.innerHTML = '';
+
+                                files.forEach(file => {
+                                    const row = document.createElement('tr');
+                                    row.innerHTML = `
+                                        <td>${file.fileName}</td>
+                                        <td>${formatFileSize(file.fileSize)}</td>
+                                        <td>${file.pickupCode}</td>
+                                        <td>${formatDate(file.uploadTime)}</td>
+                                    `;
+                                    tableBody.appendChild(row);
+                                });
+                            }
+                        };
+
+                        getAll.onerror = function (event) {
+                            console.error('获取文件列表失败:', event.target.error);
+                        };
+                    };
+
+                    request.onerror = function (event) {
+                        console.error('打开数据库失败:', event.target.error);
+                    };
+                } catch (error) {
+                    console.error('显示文件列表时出错:', error);
+                }
+            }
+
+            function formatFileSize(bytes) {
+                const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+                let size = bytes;
+                let unitIndex = 0;
+
+                while (size >= 1024 && unitIndex < units.length - 1) {
+                    size /= 1024;
+                    unitIndex++;
+                }
+
+                return size.toFixed(2) + ' ' + units[unitIndex];
+            }
+
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleString();
+            }
+
+            function saveSettings() {
+                const newMaxFileSize = parseInt(maxFileSizeInput.value);
+                const newExpirationDays = parseInt(expirationDaysInput.value);
+                const newEnableVIP = document.getElementById('enableVIP').checked;
+                const newEnableGuestUpload = document.getElementById('enableGuestUpload').checked;
+                const newEnableGuestDownload = document.getElementById('enableGuestDownload').checked;
+                const newGuestDailyDownloadLimit = parseInt(document.getElementById('guestDailyDownloadLimit').value);
+
+                // 验证输入
+                if (isNaN(newMaxFileSize) || newMaxFileSize < 1 || newMaxFileSize > 9999999) {
+                    alert('请输入有效的文件大小限制（1-9999999MB）');
+                    maxFileSizeInput.value = settings.maxFileSize;
+                    return;
+                }
+
+                if (isNaN(newExpirationDays) || newExpirationDays < 1) {
+                    alert('请输入有效的过期时间（至少1天）');
+                    expirationDaysInput.value = settings.expirationDays;
+                    return;
+                }
+
+                if (isNaN(newGuestDailyDownloadLimit) || newGuestDailyDownloadLimit < 0) {
+                    alert('请输入有效的访客下载次数限制（0或更大）');
+                    document.getElementById('guestDailyDownloadLimit').value = settings.guestDailyDownloadLimit;
+                    return;
+                }
+
+                // 更新设置
+                settings = {
+                    ...settings,
+                    maxFileSize: newMaxFileSize,
+                    expirationDays: newExpirationDays,
+                    enableVIP: newEnableVIP,
+                    enableGuestUpload: newEnableGuestUpload,
+                    enableGuestDownload: newEnableGuestDownload,
+                    guestDailyDownloadLimit: newGuestDailyDownloadLimit
+                };
+
+                // 保存到 localStorage
+                localStorage.setItem('relaySettings', JSON.stringify(settings));
+
+                console.log('Settings updated:', settings);
+                alert('设置已保存并更新');
+            }
+
+            function loadSettings() {
+                const savedSettings = localStorage.getItem('relaySettings');
+                if (savedSettings) {
+                    try {
+                        const parsed = JSON.parse(savedSettings);
+                        settings = {
+                            maxFileSize: parsed.maxFileSize || 100,
+                            expirationDays: parsed.expirationDays || 7,
+                            enableVIP: parsed.enableVIP || false,
+                            enableGuestUpload: parsed.enableGuestUpload ?? true,
+                            enableGuestDownload: parsed.enableGuestDownload ?? true,
+                            guestDailyDownloadLimit: parsed.guestDailyDownloadLimit || 10,
+                            vipSettings: {
+                                uploadEnabled: parsed.vipSettings?.uploadEnabled ?? true,
+                                downloadEnabled: parsed.vipSettings?.downloadEnabled ?? true,
+                                dailyDownloadLimit: parsed.vipSettings?.dailyDownloadLimit || 0,
+                                maxFileSize: parsed.vipSettings?.maxFileSize || 1024,
+                                expirationDays: parsed.vipSettings?.expirationDays || 30
+                            }
+                        };
+                    } catch (error) {
+                        console.error('Error parsing settings:', error);
+                        settings = {
+                            maxFileSize: 100,
+                            expirationDays: 7,
+                            enableVIP: false,
+                            enableGuestUpload: true,
+                            enableGuestDownload: true,
+                            guestDailyDownloadLimit: 10,
+                            vipSettings: {
+                                uploadEnabled: true,
+                                downloadEnabled: true,
+                                dailyDownloadLimit: 0,
+                                maxFileSize: 1024,
+                                expirationDays: 30
+                            }
+                        };
+                    }
+                }
+
+                // 更新UI
+                maxFileSizeInput.value = settings.maxFileSize;
+                expirationDaysInput.value = settings.expirationDays;
+                document.getElementById('enableVIP').checked = settings.enableVIP;
+                document.getElementById('enableGuestUpload').checked = settings.enableGuestUpload;
+                document.getElementById('enableGuestDownload').checked = settings.enableGuestDownload;
+                document.getElementById('guestDailyDownloadLimit').value = settings.guestDailyDownloadLimit;
+                document.getElementById('vipSettings').style.display = settings.enableVIP ? 'inline-block' : 'none';
+
+                console.log('Settings loaded:', settings);
+            }
+
+            function checkSettings() {
+                const savedSettings = localStorage.getItem('relaySettings');
+                if (savedSettings) {
+                    try {
+                        const parsed = JSON.parse(savedSettings);
+                        const currentSettings = JSON.stringify(settings);
+                        if (savedSettings !== currentSettings) {
+                            settings = {
+                                maxFileSize: parsed.maxFileSize || 100,
+                                expirationDays: parsed.expirationDays || 7,
+                                enableVIP: parsed.enableVIP || false,
+                                enableGuestUpload: parsed.enableGuestUpload ?? true,
+                                enableGuestDownload: parsed.enableGuestDownload ?? true,
+                                guestDailyDownloadLimit: parsed.guestDailyDownloadLimit || 10,
+                                vipSettings: {
+                                    uploadEnabled: parsed.vipSettings?.uploadEnabled ?? true,
+                                    downloadEnabled: parsed.vipSettings?.downloadEnabled ?? true,
+                                    dailyDownloadLimit: parsed.vipSettings?.dailyDownloadLimit || 0,
+                                    maxFileSize: parsed.vipSettings?.maxFileSize || 1024,
+                                    expirationDays: parsed.vipSettings?.expirationDays || 30
+                                }
+                            };
+                            maxFileSizeInput.value = settings.maxFileSize;
+                            expirationDaysInput.value = settings.expirationDays;
+                            document.getElementById('enableVIP').checked = settings.enableVIP;
+                            document.getElementById('enableGuestUpload').checked = settings.enableGuestUpload;
+                            document.getElementById('enableGuestDownload').checked = settings.enableGuestDownload;
+                            document.getElementById('guestDailyDownloadLimit').value = settings.guestDailyDownloadLimit;
+                            document.getElementById('vipSettings').style.display = settings.enableVIP ? 'inline-block' : 'none';
+                            console.log('Settings reloaded:', settings);
+                        }
+                    } catch (error) {
+                        console.error('Error checking settings:', error);
+                    }
+                }
+            }
+
+            // 暴露给全局以供删除按钮使用
+            window.deleteFile = deleteFile;
+
+            function generateCard() {
+                const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                const segments = 4;
+                const segmentLength = 4;
+                let card = '';
+
+                for (let i = 0; i < segments; i++) {
+                    for (let j = 0; j < segmentLength; j++) {
+                        card += characters.charAt(Math.floor(Math.random() * characters.length));
+                    }
+                    if (i < segments - 1) card += '-';
+                }
+
+                return card;
+            }
+
+            function generateCards(count) {
+                const cards = [];
+                for (let i = 0; i < count; i++) {
+                    let card;
+                    do {
+                        card = generateCard();
+                    } while (db.cards && db.cards[card]); // 确保卡密不重复
+
+                    if (!db.cards) {
+                        db.cards = {};
+                    }
+
+                    db.cards[card] = {
+                        createdAt: new Date().toISOString(),
+                        used: false,
+                        usedBy: null,
+                        usedAt: null
+                    };
+                    cards.push(card);
+                }
+                localStorage.setItem('cards', JSON.stringify(db.cards));
+                return cards;
+            }
+
+            function deleteCard(card) {
+                if (db.cards[card] && !db.cards[card].used) {
+                    delete db.cards[card];
+                    localStorage.setItem('cards', JSON.stringify(db.cards));
+                    updateCardsTable();
+                }
+            }
+
+            function updateCardsTable() {
+                const tbody = document.querySelector('#cardsTable tbody');
+                tbody.innerHTML = '';
+
+                if (!db.cards) {
+                    db.cards = {};
+                    return;
+                }
+
+                Object.entries(db.cards).forEach(([card, info]) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${card}</td>
+                        <td>${new Date(info.createdAt).toLocaleString()}</td>
+                        <td>
+                            <span class="card-status ${info.used ? 'used' : 'unused'}">
+                                ${info.used ? '已使用' : '未使用'}
+                            </span>
+                        </td>
+                        <td>
+                            ${info.used ?
+                            `使用者: ${info.usedBy}<br>使用时间: ${new Date(info.usedAt).toLocaleString()}` :
+                            `<button class="btn-small delete-btn" onclick="deleteCard('${card}')">删除</button>`
+                        }
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            function initializeCardManager() {
+                const cardModal = document.getElementById('cardModal');
+                const cardManagerBtn = document.getElementById('cardManager');
+                const generateBtn = document.getElementById('generateCards');
+                const exportBtn = document.getElementById('exportCards');
+                const closeBtn = cardModal.querySelector('.close');
+
+                cardManagerBtn.addEventListener('click', function () {
+                    cardModal.style.display = 'block';
+                    updateCardsTable();
+                });
+
+                generateBtn.addEventListener('click', function () {
+                    const count = parseInt(document.getElementById('cardCount').value);
+                    if (count > 0 && count <= 100) {
+                        generateCards(count);
+                        updateCardsTable();
+                    } else {
+                        alert('请输入1-100之间的数量');
+                    }
+                });
+
+                exportBtn.addEventListener('click', function () {
+                    exportUnusedCards();
+                });
+
+                closeBtn.addEventListener('click', function () {
+                    cardModal.style.display = 'none';
+                });
+
+                window.addEventListener('click', function (event) {
+                    if (event.target == cardModal) {
+                        cardModal.style.display = 'none';
+                    }
+                });
+
+                // 暴露给全局以供删除按钮使用
+                window.deleteCard = deleteCard;
+            }
+
+            function exportUnusedCards() {
+                if (!db.cards || Object.keys(db.cards).length === 0) {
+                    alert('没有可导出的卡密');
+                    return;
+                }
+
+                // 获取所有未使用的卡密
+                const unusedCards = Object.entries(db.cards)
+                    .filter(([_, info]) => !info.used)
+                    .map(([card]) => card);
+
+                if (unusedCards.length === 0) {
+                    alert('没有未使用的卡密可导出');
+                    return;
+                }
+
+                // 创建文本内容
+                const content = unusedCards.join('\n');
+
+                // 创建Blob对象
+                const blob = new Blob([content], { type: 'text/plain' });
+
+                // 创建下载链接
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `未使用卡密_${new Date().toISOString().split('T')[0]}.txt`;
+
+                // 触发下载
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(a.href);
+            }
+
+            initialize();
+            saveSettingsButton.addEventListener('click', saveSettings);
+
+            // 每分钟检查一次设置更新
+            setInterval(checkSettings, 60000);
+
+            // 添加样式
+            const style = document.createElement('style');
+            style.textContent += `
+                .users-section {
+                    margin-top: 30px;
+                }
+
+                #usersTable {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 15px;
+                }
+
+                #usersTable th,
+                #usersTable td {
+                    padding: 12px;
+                    text-align: left;
+                    border-bottom: 1px solid #333;
+                }
+
+                #usersTable th {
+                    background-color: #2C2C2C;
+                    color: #BB86FC;
+                }
+
+                .btn-member {
+                    background-color: #4CAF50;
+                }
+
+                .btn-member:hover {
+                    background-color: #45a049;
+                }
+
+                .btn-banned {
+                    background-color: #f44336;
+                }
+
+                .btn-banned:hover {
+                    background-color: #da190b;
+                }
+
+                .btn-unbanned {
+                    background-color: #2196F3;
+                }
+
+                .btn-unbanned:hover {
+                    background-color: #0b7dda;
+                }
+            `;
+            document.head.appendChild(style);
+
+            // 添加tab样式
+            const tabStyle = document.createElement('style');
+            tabStyle.textContent = `
+                .tab-container {
+                    margin-top: 20px;
+                }
+
+                .tab-header {
+                    display: flex;
+                    gap: 10px;
+                    margin-bottom: 20px;
+                }
+
+                .tab-button {
+                    padding: 10px 20px;
+                    background-color: #2C2C2C;
+                    border: 1px solid #444;
+                    border-radius: 4px;
+                    color: #e0e0e0;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                }
+
+                .tab-button:hover {
+                    background-color: #3C3C3C;
+                }
+
+                .tab-button.active {
+                    background-color: #BB86FC;
+                    color: #1E1E1E;
+                    border-color: #BB86FC;
+                }
+
+                .tab-content {
+                    background-color: #1E1E1E;
+                    border-radius: 8px;
+                    border: 1px solid #333;
+                }
+
+                .tab-pane {
+                    display: none;
+                    padding: 20px;
+                }
+
+                .tab-pane.active {
+                    display: block;
+                }
+            `;
+            document.head.appendChild(tabStyle);
+        })();
+    </script>
+
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .settings-section,
+        .info-section,
+        .files-section {
+            background: linear-gradient(135deg, rgba(30, 30, 30, 0.9), rgba(20, 20, 20, 0.95));
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .settings-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .settings-buttons {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .setting-item {
+            background: rgba(44, 44, 44, 0.5);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(187, 134, 252, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .setting-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(187, 134, 252, 0.1);
+        }
+
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: linear-gradient(135deg, rgba(44, 44, 44, 0.4), rgba(30, 30, 30, 0.6));
+        }
+
+        .setting-item label {
+            display: block;
+            margin-bottom: 10px;
+            color: #BB86FC;
+            font-weight: 500;
+            font-size: 0.95em;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .setting-item input[type="number"],
+        .setting-item input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            background: rgba(20, 20, 20, 0.8);
+            border: 1px solid rgba(187, 134, 252, 0.2);
+            color: #e0e0e0;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .setting-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #BB86FC;
+        }
+
+        .setting-item input:focus {
+            outline: none;
+            border-color: #BB86FC;
+            box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.2);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3700B3, #6200EE);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn.glow-effect::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            transform: rotate(45deg);
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+
+        .btn.glow-effect:hover::before {
+            opacity: 1;
+            transform: rotate(45deg) translate(10%, 10%);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(98, 0, 238, 0.3);
+            background: linear-gradient(135deg, #4700E3, #7F39FB);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* 卡密管理弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: #1E1E1E;
+            margin: 10% auto;
+            padding: 0;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #BB86FC;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: #BB86FC;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid #333;
+            text-align: right;
+        }
+
+        .vip-setting-item {
+            margin-bottom: 20px;
+        }
+
+        .vip-setting-item label {
+            display: block;
+            margin-bottom: 8px;
+            color: #e0e0e0;
+        }
+
+        .vip-setting-item input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #2C2C2C;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            margin-bottom: 4px;
+        }
+
+        .vip-setting-item input[type="checkbox"] {
+            margin-right: 8px;
+        }
+
+        .hint {
+            color: #666;
+            font-size: 0.9em;
+            margin-left: 8px;
+        }
+
+        #vipSettings {
+            margin-right: 10px;
+            background-color: #6200EE;
+        }
+
+        #vipSettings:hover {
+            background-color: #7F39FB;
+        }
+
+        /* 卡密管理模态框样式 */
+        .modal-content {
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-generator {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(44, 44, 44, 0.5);
+            border-radius: 8px;
+        }
+
+        .card-generator .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .card-generator input[type="number"] {
+            width: 80px;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            background: #2C2C2C;
+            color: #fff;
+        }
+
+        .card-list {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(44, 44, 44, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .card-list h3 {
+            margin: 0 0 15px 0;
+            color: #BB86FC;
+        }
+
+        .table-container {
+            flex: 1;
+            overflow-y: auto;
+            border-radius: 4px;
+            border: 1px solid #444;
+        }
+
+        #cardsTable {
+            width: 100%;
+            border-collapse: collapse;
+            background: #1E1E1E;
+        }
+
+        #cardsTable th,
+        #cardsTable td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+
+        #cardsTable th {
+            background: #2C2C2C;
+            color: #BB86FC;
+            font-weight: 500;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        #cardsTable tr:hover {
+            background: #2C2C2C;
+        }
+
+        #cardsTable td {
+            color: #e0e0e0;
+        }
+
+        .btn.glow-effect {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn.glow-effect:after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            animation: glow 2s linear infinite;
+        }
+
+        @keyframes glow {
+            0% {
+                transform: translateX(-100%) rotate(45deg);
+            }
+
+            100% {
+                transform: translateX(100%) rotate(45deg);
+            }
+        }
+    </style>
+</body>
+
+</html>

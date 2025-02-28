@@ -147,6 +147,7 @@
         <div class="tabs">
             <div class="tab active" data-target="one-to-one">一对一通信</div>
             <div class="tab" data-target="group-chat">群组对话</div>
+            <div class="tab" data-target="file-transfer">文件传输</div>
         </div>
 
         <div id="one-to-one-content">
@@ -230,6 +231,63 @@
                 </div>
             </div>
         </div>
+
+        <div id="file-transfer-content" style="display: none;">
+            <div class="new-feature">
+                <h2>文件传输功能</h2>
+                <p>文件传输功能允许用户上传文件，生成取件码，并通过中转服务器进行文件的存储和下载。用户可以通过取件码在任何设备上下载文件。</p>
+            </div>
+
+            <h2>文件上传步骤</h2>
+
+            <ol>
+                <li>打开 <code>file-upload.html</code> 页面。</li>
+                <li>点击 <code>选择文件</code> 按钮，选择要上传的文件。</li>
+                <li>点击 <code>上传文件</code> 按钮，系统会提示输入中转服务器的ID。</li>
+                <li>输入中转服务器的ID，确认上传。</li>
+                <li>上传成功后，页面会显示文件的相关信息，包括文件名、文件大小、取件码和中转服务器地址。</li>
+            </ol>
+
+            <h2>文件下载步骤</h2>
+
+            <ol>
+                <li>打开 <code>file-upload.html</code> 页面。</li>
+                <li>在 <code>下载文件</code> 区域，输入中转服务器地址和取件码。</li>
+                <li>点击 <code>下载文件</code> 按钮。</li>
+                <li>浏览器会自动下载文件。</li>
+            </ol>
+
+            <h2>中转服务器管理</h2>
+
+            <ol>
+                <li>打开 <code>file-relay.html</code> 页面。</li>
+                <li>页面会显示服务器的ID和连接状态。</li>
+                <li>上传的文件会显示在 <code>已上传的文件</code> 表格中，包括文件名、文件大小、取件码和上传时间。</li>
+                <li>中转服务器会自动处理文件的上传和下载请求。</li>
+            </ol>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>文件上传</h3>
+                    <p>用户可以选择文件并上传到中转服务器，系统会生成一个唯一的取件码。</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>文件下载</h3>
+                    <p>用户可以通过输入中转服务器地址和取件码来下载文件，支持跨设备下载。</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>中转服务器</h3>
+                    <p>中转服务器负责接收上传的文件，存储文件数据，并处理下载请求。服务器使用IndexedDB进行文件的本地存储。</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>取件码</h3>
+                    <p>每个上传的文件都会生成一个唯一的取件码，用于文件的检索和下载。取件码使用安全的随机算法生成。</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -247,6 +305,7 @@
                     // 隐藏所有内容
                     document.getElementById('one-to-one-content').style.display = 'none';
                     document.getElementById('group-chat-content').style.display = 'none';
+                    document.getElementById('file-transfer-content').style.display = 'none';
 
                     // 显示相应内容
                     const target = this.getAttribute('data-target');
